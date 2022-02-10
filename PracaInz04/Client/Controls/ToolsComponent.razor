@@ -1,0 +1,30 @@
+﻿@*@inject SService SService
+@inject Blazored.LocalStorage.ILocalStorageService localStorage*@
+
+@inherits SharedBaseComponent
+
+<h4>ToolsComponent</h4>
+
+<p>Current count: @SService.Count</p>
+
+<button class="btn btn-primary" @onclick="Increment">Click me</button>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        SService.OnChange += StateHasChanged;
+    }
+
+    public async Task Increment()
+    {
+        SService.Count += 1;
+        SService.NotifyStateChanged();
+        await SaveToLocalStorage();
+    }
+
+    public async Task SaveToLocalStorage()
+    {
+        await SService.SaveToLocalStorage();
+    }
+}
