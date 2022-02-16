@@ -1,99 +1,202 @@
 ﻿@page "/idbtest"
 
+@inject StateService SService
 @inject GridColumnDataIndexedDb2 GridColumnDataIndexedDb2
 
 <h3>IDBTestComponent</h3>
+<div class="custom-file">
+    <InputFile OnChange="OnFileUpload" class="custom-file-input"/>
+</div>
+@*<button class="btn btn-primary" @onclick="SaveToDb">Click me</button>*@
+<button class="btn btn-primary" @onclick="TestAttributesDelete">DeleteAll</button>
+<button class="btn btn-primary" @onclick="TestAttributesDeleteDb">DeleteDb</button>
+<button class="btn btn-primary" @onclick="ShowImage">ShowImage</button>
+<br />
+<div class="d-flex justify-content-center p-4">
+    <img src="@SService.imgUrl" alt="placeholder1" height="400">
+</div>
 
 @code {
-	protected override async Task OnAfterRenderAsync(bool firstRender)
+                    // need to store content type in idb
+    public async Task OnFileUpload(InputFileChangeEventArgs e)
     {
-        if (firstRender)
-        {
-            //await InlineKeys();
-            await TestAttributes();
-            //await InlineKeysPlusKeyGenerator();
-            //await OutOfLinekeys();
-            //await InlineKeysTwoDatabases();
-            //await TestUpgrade();
-        }
+        SService.imageFile = e.File;
+        SService.imageArray = new byte[SService.imageFile.Size];
+        //Console.WriteLine(1);
+        await SService.imageFile.OpenReadStream(1024*1024*10).ReadAsync(SService.imageArray);
+        //Console.WriteLine(2);
+        string imageType = SService.imageFile.ContentType;
+        //SService.imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(SService.imageArray)}";
+        //Console.WriteLine(3);
+        await TestAttributesUpload(SService.imageArray, SService.imageFile.Name, imageType);
+        //StateHasChanged();
+        //Console.WriteLine(4);
+        // timer, image load
+        //for (var i = 1; i <= 4; i++)
+        //{
+        //    Thread.Sleep(1000);
+        //    Console.WriteLine($"5, {i}");
+        //}
+        //SService.LoadImage();
+        //Console.WriteLine(4);
+        //SService.imageStream = SService.imageFile.OpenReadStream(5120000);
+        //SService.imageResult = Image.Load(SService.imageStream);
+        //SService.imageResult = Image.Load(SService.imageArray);
+
+        //var watch = new System.Diagnostics.Stopwatch();
+        //watch.Start();
+        //watch.Stop();
+        //Console.WriteLine($"Execution Time: {watch.ElapsedMilliseconds} ms");
     }
 
-    public List<ImageDto> GetImages()
+    public async Task ShowImage()
+    {
+        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
+        //SService.imageArray = null;
+        SService.imageArray = db1Result6.ImageArray;
+        //string imageType = SService.imageFile.ContentType;
+        string imageType = db1Result6.ImageType;
+        SService.imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(SService.imageArray)}";
+        StateHasChanged();
+        Console.WriteLine("image shown");
+    }
+
+    public List<ImageDto> GetImages(byte[] imageArr, string fileName, int maxKey, string imageType)
     {
         var items = new List<ImageDto>
         {
             new ImageDto
             {
-                ImageId = 11,
-                ImageName = "image1.jpeg",
-                ImageArray = new byte[] { 0,1,2,3}
-            },
-            new ImageDto
-            {
-                ImageId = 12,
-                ImageName = "image2.png",
-                ImageArray = new byte[] { 3,2,1,0}
+                ImageId = maxKey+1,
+                ImageName = fileName,
+                ImageArray = imageArr,
+                ImageType = imageType
             }
         };
-
         return items;
     }
 
-    private async Task TestAttributes()
+    public async Task TestAttributesUpload(byte[] imageArr, string fileName, string imageType)
     {
-        //var tableFieldService = new TableFieldService();
-        //var imageService = new ImageService();
-
-        var itemsDb1 = GetImages();
-
         var db1Result = await GridColumnDataIndexedDb2.OpenIndexedDb();
-
-        if (db1Result != -1)
-        {
-            try
-            {
-                var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
-            }
-            catch(Exception ex)
-            {
-                Console.Write("Ex message: " + ex.Message);
-            }
-        }
-
-        var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
-
-        //var db1Result3 = await GridColumnDataIndexedDb2.GetByKey<int, TableFieldDto>(11);
-
-        //var db1Result4 = await GridColumnDataIndexedDb2.DeleteByKey<int, TableFieldDto>(11);
-
-        var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
-
-        //var db1Result6 = await GridColumnDataIndexedDb2.GetRange<int, TableFieldDto>(15, 20);
-
-        //foreach (var item in db1Result5)
+        var maxKey = await GridColumnDataIndexedDb2.GetMaxKey<int, ImageDto>();
+        var itemsDb1 = GetImages(imageArr, fileName, maxKey, imageType);
+        //if (db1Result != -1)
         //{
-        //    item.FieldVisualName = item.FieldVisualName + "Updated";
+        //    var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
         //}
-
-        //var db1Result7a = await GridColumnDataIndexedDb2.UpdateItems<TableFieldDto>(db1Result5.ToList());
-
-        //var db1Result8 = await GridColumnDataIndexedDb2.GetByIndex<int, TableFieldDto>(11, 18, "tableFieldId", true);
-
-        var db1Result9 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("image2.png", null, "imageName", false);
-
-        //var testMaxKeyEmpty = await GridColumnDataIndexedDb2.GetMaxKey<int, TableFieldDto>();
-
-        //var testMinKeyEmpty = await GridColumnDataIndexedDb2.GetMinKey<int, TableFieldDto>();
-
-        //var testMaxIndexEmpty = await GridColumnDataIndexedDb2.GetMaxIndex<int, TableFieldDto>("tableFieldId");
-
-        //var testMinIndexEmpty = await GridColumnDataIndexedDb2.GetMinIndex<int, TableFieldDto>("tableFieldId");
-
-        var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
-
-        var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
-
-        Console.Write("after deletion");
+        var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
+        Console.WriteLine("data added");
     }
 
+    public async Task TestAttributesTest()
+    {
+        var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
+        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
+        var db1Result7 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
+    }
+
+    public async Task TestAttributesDelete()
+    {
+        var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+        Console.WriteLine("store clear");
+    }
+
+    public async Task TestAttributesDeleteDb()
+    {
+        var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
+        Console.WriteLine("db deleted");
+    }
+
+    // original methods
+	//protected override async Task OnAfterRenderAsync(bool firstRender)
+ //   {
+ //       if (firstRender)
+ //       {
+ //           //await InlineKeys();
+ //           await TestAttributes();
+ //           //await InlineKeysPlusKeyGenerator();
+ //           //await OutOfLinekeys();
+ //           //await InlineKeysTwoDatabases();
+ //           //await TestUpgrade();
+ //       }
+ //   }
+
+ //   public List<ImageDto> GetImages()
+ //   {
+ //       var items = new List<ImageDto>
+ //       {
+ //           new ImageDto
+ //           {
+ //               ImageId = 11,
+ //               ImageName = "image1.jpeg",
+ //               ImageArray = new byte[] { 0,1,2,3}
+ //           },
+ //           new ImageDto
+ //           {
+ //               ImageId = 12,
+ //               ImageName = "image2.png",
+ //               ImageArray = new byte[] { 3,2,1,0}
+ //           }
+ //       };
+
+ //       return items;
+ //   }
+
+ //   private async Task TestAttributes()
+ //   {
+ //       //var tableFieldService = new TableFieldService();
+ //       //var imageService = new ImageService();
+
+ //       var itemsDb1 = GetImages();
+
+ //       var db1Result = await GridColumnDataIndexedDb2.OpenIndexedDb();
+
+ //       if (db1Result != -1)
+ //       {
+ //           try
+ //           {
+ //               var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+ //           }
+ //           catch(Exception ex)
+ //           {
+ //               Console.Write("Ex message: " + ex.Message);
+ //           }
+ //       }
+
+ //       var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
+
+ //       //var db1Result3 = await GridColumnDataIndexedDb2.GetByKey<int, TableFieldDto>(11);
+
+ //       //var db1Result4 = await GridColumnDataIndexedDb2.DeleteByKey<int, TableFieldDto>(11);
+
+ //       var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
+
+ //       //var db1Result6 = await GridColumnDataIndexedDb2.GetRange<int, TableFieldDto>(15, 20);
+
+ //       //foreach (var item in db1Result5)
+ //       //{
+ //       //    item.FieldVisualName = item.FieldVisualName + "Updated";
+ //       //}
+
+ //       //var db1Result7a = await GridColumnDataIndexedDb2.UpdateItems<TableFieldDto>(db1Result5.ToList());
+
+ //       //var db1Result8 = await GridColumnDataIndexedDb2.GetByIndex<int, TableFieldDto>(11, 18, "tableFieldId", true);
+
+ //       var db1Result9 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("image2.png", null, "imageName", false);
+
+ //       //var testMaxKeyEmpty = await GridColumnDataIndexedDb2.GetMaxKey<int, TableFieldDto>();
+
+ //       //var testMinKeyEmpty = await GridColumnDataIndexedDb2.GetMinKey<int, TableFieldDto>();
+
+ //       //var testMaxIndexEmpty = await GridColumnDataIndexedDb2.GetMaxIndex<int, TableFieldDto>("tableFieldId");
+
+ //       //var testMinIndexEmpty = await GridColumnDataIndexedDb2.GetMinIndex<int, TableFieldDto>("tableFieldId");
+
+ //       var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+
+ //       var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
+
+ //       Console.Write("after deletion");
+ //   }
 }

@@ -25,6 +25,7 @@ namespace PracaInz04.Client.IndexedDBModels
             public string ImageName { get; set; }
 
             public byte[] ImageArray { get; set; }
+            public string ImageType { get; set; }
         }
 
         public static IndexedDbDatabaseModel GetGridColumnDatabaseModelAttributeBased()

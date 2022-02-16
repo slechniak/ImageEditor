@@ -84,6 +84,8 @@ else
         }
         var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
         var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
+        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
+        var db1Result7 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
         var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
         var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
         Console.Write("after deletion");

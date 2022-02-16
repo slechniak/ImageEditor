@@ -236,7 +236,6 @@ window.dnetindexeddbinterop = (function () {
             const onBlocked = (err) => {
                 //original line
                 //observer.error(indexedDbMessages.DB_DELETED_BLOCKED);
-                //err.target.result.close();
                 //my edit - works
                 console.log("onBlocked: DB_DELETED_BLOCKED");
                 dbModel.instance.close();

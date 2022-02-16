@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
-using System.Threading.Tasks;
 using PracaInz04.Client.Services;
-using Blazored.LocalStorage;
-using System;
 
 namespace PracaInz04.Client.BaseComponents
 {
