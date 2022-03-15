@@ -28,6 +28,17 @@ namespace PracaInz04.Client.IndexedDBModels
             public string ImageType { get; set; }
         }
 
+        public class ImageInfo
+        {
+            [IndexDbKey(AutoIncrement = true)]
+            public int? ImageId { get; set; }
+
+            [IndexDbIndex]
+            public string ImageName { get; set; }
+
+            public string  Thumbnail { get; set; }
+        }
+
         public static IndexedDbDatabaseModel GetGridColumnDatabaseModelAttributeBased()
         {
             var indexedDbDatabaseModel = new IndexedDbDatabaseModel()
@@ -35,6 +46,7 @@ namespace PracaInz04.Client.IndexedDBModels
                 .WithVersion(1);
 
             indexedDbDatabaseModel.AddStore<ImageDto>();
+            indexedDbDatabaseModel.AddStore<ImageInfo>();
 
             return indexedDbDatabaseModel;
         }
