@@ -14,7 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Services.AddScoped<StateService>();
 builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddIndexedDbDatabase<GridColumnDataIndexedDb2>(options =>
+builder.Services.AddIndexedDbDatabase<IndexedDbContext>(options =>
 {
     var indexedDbDatabaseModel = GetGridColumnDatabaseModelAttributeBased();
     options.UseDatabase(indexedDbDatabaseModel);

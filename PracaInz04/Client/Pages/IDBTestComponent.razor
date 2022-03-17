@@ -1,7 +1,7 @@
 ﻿@page "/idbtest"
 
 @inject StateService SService
-@inject GridColumnDataIndexedDb2 GridColumnDataIndexedDb2
+@inject IndexedDbContext IndexedDbContext
 
 <h3>IDBTestComponent</h3>
 <div class="custom-file">
@@ -51,7 +51,7 @@
 
     public async Task ShowImage()
     {
-        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
+        var db1Result6 = await IndexedDbContext.GetByKey<int, ImageDto>(1);
         //SService.imageArray = null;
         SService.imageArray = db1Result6.ImageArray;
         //string imageType = SService.imageFile.ContentType;
@@ -78,33 +78,33 @@
 
     public async Task TestAttributesUpload(byte[] imageArr, string fileName, string imageType)
     {
-        var db1Result = await GridColumnDataIndexedDb2.OpenIndexedDb();
-        var maxKey = await GridColumnDataIndexedDb2.GetMaxKey<int, ImageDto>();
+        var db1Result = await IndexedDbContext.OpenIndexedDb();
+        var maxKey = await IndexedDbContext.GetMaxKey<int, ImageDto>();
         var itemsDb1 = GetImages(imageArr, fileName, maxKey, imageType);
         //if (db1Result != -1)
         //{
-        //    var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+        //    var db1Result1 = await IndexedDbContext.DeleteAll<ImageDto>();
         //}
-        var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
+        var db1Result2 = await IndexedDbContext.AddItems<ImageDto>(itemsDb1);
         Console.WriteLine("data added");
     }
 
     public async Task TestAttributesTest()
     {
-        var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
-        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
-        var db1Result7 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
+        var db1Result5 = await IndexedDbContext.GetAll<ImageDto>();
+        var db1Result6 = await IndexedDbContext.GetByKey<int, ImageDto>(1);
+        var db1Result7 = await IndexedDbContext.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
     }
 
     public async Task TestAttributesDelete()
     {
-        var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+        var db1Result10 = await IndexedDbContext.DeleteAll<ImageDto>();
         Console.WriteLine("store clear");
     }
 
     public async Task TestAttributesDeleteDb()
     {
-        var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
+        var db1Result11 = await IndexedDbContext.DeleteIndexedDb();
         Console.WriteLine("db deleted");
     }
 
@@ -150,13 +150,13 @@
 
  //       var itemsDb1 = GetImages();
 
- //       var db1Result = await GridColumnDataIndexedDb2.OpenIndexedDb();
+ //       var db1Result = await IndexedDbContext.OpenIndexedDb();
 
  //       if (db1Result != -1)
  //       {
  //           try
  //           {
- //               var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+ //               var db1Result1 = await IndexedDbContext.DeleteAll<ImageDto>();
  //           }
  //           catch(Exception ex)
  //           {
@@ -164,38 +164,38 @@
  //           }
  //       }
 
- //       var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
+ //       var db1Result2 = await IndexedDbContext.AddItems<ImageDto>(itemsDb1);
 
- //       //var db1Result3 = await GridColumnDataIndexedDb2.GetByKey<int, TableFieldDto>(11);
+ //       //var db1Result3 = await IndexedDbContext.GetByKey<int, TableFieldDto>(11);
 
- //       //var db1Result4 = await GridColumnDataIndexedDb2.DeleteByKey<int, TableFieldDto>(11);
+ //       //var db1Result4 = await IndexedDbContext.DeleteByKey<int, TableFieldDto>(11);
 
- //       var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
+ //       var db1Result5 = await IndexedDbContext.GetAll<ImageDto>();
 
- //       //var db1Result6 = await GridColumnDataIndexedDb2.GetRange<int, TableFieldDto>(15, 20);
+ //       //var db1Result6 = await IndexedDbContext.GetRange<int, TableFieldDto>(15, 20);
 
  //       //foreach (var item in db1Result5)
  //       //{
  //       //    item.FieldVisualName = item.FieldVisualName + "Updated";
  //       //}
 
- //       //var db1Result7a = await GridColumnDataIndexedDb2.UpdateItems<TableFieldDto>(db1Result5.ToList());
+ //       //var db1Result7a = await IndexedDbContext.UpdateItems<TableFieldDto>(db1Result5.ToList());
 
- //       //var db1Result8 = await GridColumnDataIndexedDb2.GetByIndex<int, TableFieldDto>(11, 18, "tableFieldId", true);
+ //       //var db1Result8 = await IndexedDbContext.GetByIndex<int, TableFieldDto>(11, 18, "tableFieldId", true);
 
- //       var db1Result9 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("image2.png", null, "imageName", false);
+ //       var db1Result9 = await IndexedDbContext.GetByIndex<string, ImageDto>("image2.png", null, "imageName", false);
 
- //       //var testMaxKeyEmpty = await GridColumnDataIndexedDb2.GetMaxKey<int, TableFieldDto>();
+ //       //var testMaxKeyEmpty = await IndexedDbContext.GetMaxKey<int, TableFieldDto>();
 
- //       //var testMinKeyEmpty = await GridColumnDataIndexedDb2.GetMinKey<int, TableFieldDto>();
+ //       //var testMinKeyEmpty = await IndexedDbContext.GetMinKey<int, TableFieldDto>();
 
- //       //var testMaxIndexEmpty = await GridColumnDataIndexedDb2.GetMaxIndex<int, TableFieldDto>("tableFieldId");
+ //       //var testMaxIndexEmpty = await IndexedDbContext.GetMaxIndex<int, TableFieldDto>("tableFieldId");
 
- //       //var testMinIndexEmpty = await GridColumnDataIndexedDb2.GetMinIndex<int, TableFieldDto>("tableFieldId");
+ //       //var testMinIndexEmpty = await IndexedDbContext.GetMinIndex<int, TableFieldDto>("tableFieldId");
 
- //       var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+ //       var db1Result10 = await IndexedDbContext.DeleteAll<ImageDto>();
 
- //       var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
+ //       var db1Result11 = await IndexedDbContext.DeleteIndexedDb();
 
  //       Console.Write("after deletion");
  //   }

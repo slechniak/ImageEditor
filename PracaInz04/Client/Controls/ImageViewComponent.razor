@@ -1,5 +1,5 @@
 ﻿@*@inject SService SService*@
-@inject GridColumnDataIndexedDb2 GridColumnDataIndexedDb2
+@inject IndexedDbContext IndexedDbContext
 
 @inherits SharedBaseComponent
 
@@ -77,17 +77,17 @@ else
     public async Task TestAttributes(byte[] imageArr, string fileName)
     {
         var itemsDb1 = GetImages(imageArr, fileName);
-        var db1Result = await GridColumnDataIndexedDb2.OpenIndexedDb();
+        var db1Result = await IndexedDbContext.OpenIndexedDb();
         if (db1Result != -1)
         {
-            var db1Result1 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
+            var db1Result1 = await IndexedDbContext.DeleteAll<ImageDto>();
         }
-        var db1Result2 = await GridColumnDataIndexedDb2.AddItems<ImageDto>(itemsDb1);
-        var db1Result5 = await GridColumnDataIndexedDb2.GetAll<ImageDto>();
-        var db1Result6 = await GridColumnDataIndexedDb2.GetByKey<int, ImageDto>(1);
-        var db1Result7 = await GridColumnDataIndexedDb2.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
-        var db1Result10 = await GridColumnDataIndexedDb2.DeleteAll<ImageDto>();
-        var db1Result11 = await GridColumnDataIndexedDb2.DeleteIndexedDb();
+        var db1Result2 = await IndexedDbContext.AddItems<ImageDto>(itemsDb1);
+        var db1Result5 = await IndexedDbContext.GetAll<ImageDto>();
+        var db1Result6 = await IndexedDbContext.GetByKey<int, ImageDto>(1);
+        var db1Result7 = await IndexedDbContext.GetByIndex<string, ImageDto>("pokoj1.png", null, "imageName", false);
+        var db1Result10 = await IndexedDbContext.DeleteAll<ImageDto>();
+        var db1Result11 = await IndexedDbContext.DeleteIndexedDb();
         Console.Write("after deletion");
     }
 }

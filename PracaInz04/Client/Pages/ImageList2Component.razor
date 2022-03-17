@@ -1,4 +1,4 @@
-﻿@page "/imagelist"
+﻿@page "/imagelist2"
 
 @inject StateService SService
 @inject IndexedDbContext IndexedDbContext
@@ -102,16 +102,20 @@
 
     public async Task OnFileUpload(InputFileChangeEventArgs e)
     {
+        // get image array, content type, other data
         IBrowserFile imageFile = e.File;
         byte[] imageArray = new byte[imageFile.Size];
         await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
         string imageType = imageFile.ContentType;
-        int maxKey = await IndexedDbContext.GetMaxKey<int, ImageDto>();
-        var imageDtoList = GetImageDto(imageArray, imageFile.Name, maxKey+1, imageType);
-        var addedResult = await IndexedDbContext.AddItems<ImageDto>(imageDtoList);
+        
+        // add original and data to idb
+        var addedResult = await AddImageDataToIDb(imageArray, imageFile.Name, imageType);
         Console.WriteLine($"data added: {imageFile.Name}");
-        var imageInfoList = GetImageInfo(GetThumbnail(imageArray, imageType), imageFile.Name, maxKey+1);
-        var addedResult2 = await IndexedDbContext.AddItems<ImageInfo>(imageInfoList);
+        
+        // add resized to idb
+        var addedResult2 = await AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
+        Console.WriteLine($"data added: {imageFile.Name}");
+        
         //AddToThumbnailList(imageInfoList);
         await SetThumbnailListIDb();
         await SetImageDtoListIDb();
@@ -119,19 +123,17 @@
         StateHasChanged();
     }
 
-    public List<ImageDto> GetImageDto(byte[] imageArr, string fileName, int maxKey, string imageType)
+    // old methods
+    public ImageDto GetImageDto(byte[] imageArr, string fileName, int maxKey, string imageType)
     {
-        var items = new List<ImageDto>
-        {
-            new ImageDto
+        var item = new ImageDto
             {
                 ImageId = maxKey,
                 ImageName = fileName,
                 ImageArray = imageArr,
                 ImageType = imageType
-            }
-        };
-        return items;
+            };
+        return item;
     }
 
     public void AddToThumbnailList(List<ImageInfo> imageInfoList)
@@ -156,36 +158,5 @@
         Console.WriteLine("getimageinfo ended");
         return items;
     }
-
-    public string GetThumbnail(byte[] imageArray, string imageType, int width = 500)
-    {
-        string imgSrc;
-        using(Image image = Image.Load(imageArray, out var imageFormat))
-        {
-            Console.WriteLine("loading ended");
-            image.Mutate(x => x.AutoOrient());
-            int height = (image.Height * width) / image.Width;
-            image.Mutate(x => x.Resize(width, height).AutoOrient());
-            Console.WriteLine("resizing ended");
-            imgSrc = image.ToBase64String(imageFormat);
-            //imgSrc = $"data:{imageType};base64,{Convert.ToBase64String(imageArray)}";
-            Console.WriteLine("tobase64string ended");
-        }
-        Console.WriteLine("getthumbnail ended");
-        return imgSrc;
-    }
-
-    //public async Task TestAttributesUpload(byte[] imageArr, string fileName, string imageType)
-    //{
-    //    var db1Result = await IndexedDbContext.OpenIndexedDb();
-    //    var maxKey = await IndexedDbContext.GetMaxKey<int, ImageDto>();
-    //    var itemsDb1 = GetImageDto(imageArr, fileName, maxKey, imageType);
-    //    //if (db1Result != -1)
-    //    //{
-    //    //    var db1Result1 = await IndexedDbContext.DeleteAll<ImageDto>();
-    //    //}
-    //    var db1Result2 = await IndexedDbContext.AddItems<ImageDto>(itemsDb1);
-    //    Console.WriteLine("data added");
-    //}
 
 }
