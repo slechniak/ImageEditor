@@ -10,6 +10,9 @@ namespace PracaInz04.Client.Services
 {
     public class StateService
     {
+        public string ImageName { get; set; }
+
+        // old
         public int Count { get; set; }
         public string countKey = "count";
 
@@ -33,25 +36,25 @@ namespace PracaInz04.Client.Services
             OnChange?.Invoke();
         }
 
-        public async Task GetFromLocalStorage()
-        {
-            int? countValue;
-            countValue = await localStorage.GetItemAsync<int>(countKey);
-            if (countValue is not null)
-            {
-                Count = (int)countValue;
-            }
-            //Console.WriteLine($"GetFromLocalStorage, Count = {Count}");
-        }
+        //public async Task GetFromLocalStorage()
+        //{
+        //    int? countValue;
+        //    countValue = await localStorage.GetItemAsync<int>(countKey);
+        //    if (countValue is not null)
+        //    {
+        //        Count = (int)countValue;
+        //    }
+        //    //Console.WriteLine($"GetFromLocalStorage, Count = {Count}");
+        //}
 
-        public async Task SaveToLocalStorage()
-        {
-            await localStorage.SetItemAsync(countKey, Count);
-        }
+        //public async Task SaveToLocalStorage()
+        //{
+        //    await localStorage.SetItemAsync(countKey, Count);
+        //}
 
-        public async Task LoadImage()
-        {
-            imageResult = Image.Load(imageArray);
-        }
+        //public async Task LoadImage()
+        //{
+        //    imageResult = Image.Load(imageArray);
+        //}
     }
 }

@@ -1,5 +1,6 @@
 ﻿@page "/counter"
 @*@inject SService SService*@
+@inject LocalStorageManager LSManager
 
 @inherits SharedBaseComponent
 
@@ -16,9 +17,10 @@
         SService.OnChange += StateHasChanged;
     }
 
-    public void Increment()
+    public async Task Increment()
     {
         SService.Count += 1;
         SService.NotifyStateChanged();
+        await LSManager.SaveToLocalStorage();
     }
 }

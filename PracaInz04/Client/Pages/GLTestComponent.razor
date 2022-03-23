@@ -4,11 +4,12 @@
 @inject IJSRuntime JS
 @inject StateService SService
 @inject IndexedDbContext IndexedDbContext
+@inject ImageProcessing ImageProc;
 
 <h3>GLTestComponent</h3>
 @*<button class="btn btn-primary" @onclick="TestImageProcessing">TestImageProcessing</button>*@
-<button class="btn btn-primary" @onclick="() => ProcessAll(ResizeSkia)">ProcessAll(ResizeSkia)</button>
-<button class="btn btn-primary" @onclick="() => ProcessAll(RotateSkia)">ProcessAll(RotateSkia)</button>
+<button class="btn btn-primary" @onclick="() => ProcessAll(ImageProc.ResizeSkia)">ProcessAll(ResizeSkia)</button>
+<button class="btn btn-primary" @onclick="() => ProcessAll(ImageProc.RotateSkia)">ProcessAll(RotateSkia)</button>
 <br />
 @if (imageArrayList != null && imageArrayList.Count != 0)
 {
@@ -101,7 +102,7 @@
 		Console.WriteLine("Generating URLs started");
 		foreach (var imageArray in imageArrayList)
 		{
-			string imgSrc = await GetImageURL(imageArray);
+			string imgSrc = await ImageProc.GetImageURL(imageArray);
 			imageSrcList.Add(imgSrc);
 		}
 		Console.WriteLine("Generating URLs ended");
@@ -112,7 +113,7 @@
 	{
 		foreach (var imageArray in imageArrayList)
 		{
-			string imgSrc = GetImageSrc(imageArray);
+			string imgSrc = ImageProc.GetImageSrc(imageArray);
 			imageSrcList.Add(imgSrc);
 			Console.WriteLine("{0} MB", (float)imageArray.Length / (1024 * 1024));
 		}

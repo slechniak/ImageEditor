@@ -1,5 +1,6 @@
 ﻿@*@inject SService SService
 @inject Blazored.LocalStorage.ILocalStorageService localStorage*@
+@inject LocalStorageManager LSManager
 
 @inherits SharedBaseComponent
 
@@ -20,11 +21,11 @@
     {
         SService.Count += 1;
         SService.NotifyStateChanged();
-        await SaveToLocalStorage();
+        await LSManager.SaveToLocalStorage();
     }
 
-    public async Task SaveToLocalStorage()
-    {
-        await SService.SaveToLocalStorage();
-    }
+    //public async Task SaveToLocalStorage()
+    //{
+    //    await LSManager.SaveToLocalStorage();
+    //}
 }

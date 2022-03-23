@@ -2,29 +2,34 @@
 
 @inject StateService SService
 @inject IndexedDbContext IndexedDbContext
+@inject IndexedDbManager IDbManager
+@inject ImageProcessing ImageProc
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+@inject LocalStorageManager LSManager
 
 <h3>ImageListComponent</h3>
 <h6>List of images</h6>
     <div class="card-deck">
         <div class="row">
-            @if(thumbnailList.Count != 0 && imageDtoListResult.Count != 0)
+            @if(imageInfos.Count != 0)
             {
                 <p>list is not empty</p>
-            @for (int i = 0; i < imageDtoListResult.Count; i++)
-            {
-                <div class="col-4">
-                    <div class="card">
-                        <img class="card-img-top" src="@thumbnailList[i].Thumbnail" alt="Card image cap">
-                        <div class="card-body">
-                            <h5 class="card-title">@imageDtoListResult[i].ImageName</h5>
-                            <p class="card-text">Image details</p>
-                            <a href="#" class="btn btn-primary">Edit</a>
-                            <a href="#" class="btn btn-primary">Save</a>
-                            <a href="#" class="btn btn-primary">Delete</a>
+                @foreach (var imageInfo in imageInfos)
+                {
+                    <div class="col-4">
+                        <div class="card">
+                            <img class="card-img-top" src="@imageInfo.thumbnail" alt="Card image cap">
+                            <div class="card-body">
+                                <h5 class="card-title">@imageInfo.name</h5>
+                                <p class="card-text">Image details</p>
+                                <button @onclick="() => GoToEditor(imageInfo.name)" class="btn btn-primary">Edit</button>
+                                <button class="btn btn-primary">Save</button>
+                                <button class="btn btn-primary">Delete</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
             }
             else
             {
@@ -53,6 +58,11 @@
     List<string> srcImageList = new List<string>();
     List<ImageInfo> thumbnailList = new List<ImageInfo>();
 
+    List<ImageResized> resizedImages = new List<ImageResized>();
+    List<string> thumbnails = new List<string>();
+    List<(string thumbnail,
+          string name)> imageInfos = new List<(string, string)>();
+
     // old comment
     // make list of thumbnail images(strings) from imageDtoListResult
     protected override async Task OnInitializedAsync()
@@ -60,42 +70,9 @@
         //is it getting called after state has changed?
         //check first render - connection?
         var openDbResult = await IndexedDbContext.OpenIndexedDb();
-        //imageDtoListResult = await IndexedDbContext.GetAll<ImageDto>();
-        await SetImageDtoListIDb();
-        //SetImageSrcList();
-        await SetThumbnailListIDb();
+        await LoadThumbnails();
 
         await base.OnInitializedAsync();
-    }
-
-    public void SetImageSrcList()
-    {
-        srcImageList = new List<string>();
-        foreach(var imageDto in imageDtoListResult)
-        {
-            srcImageList.Add(GetImageSrc(imageDto));
-        }
-    }
-
-    public string GetImageSrc(ImageDto imageDto)
-    {
-        //var db1Result6 = await IndexedDbContext.GetByKey<int, ImageDto>(1);
-        string imgUrl = $"data:{imageDto.ImageType};base64,{Convert.ToBase64String(imageDto.ImageArray)}";
-        //Console.WriteLine("image returned");
-
-        return imgUrl;
-    }
-
-    public async Task SetImageDtoListIDb()
-    {
-        imageDtoListResult = await IndexedDbContext.GetAll<ImageDto>();
-        Console.WriteLine("setimagedtolist ended");
-    }
-
-    public async Task SetThumbnailListIDb()
-    {
-        thumbnailList = await IndexedDbContext.GetAll<ImageInfo>();
-        Console.WriteLine("setthumbnaillist ended");
     }
 
     // code from idbtest
@@ -107,56 +84,71 @@
         byte[] imageArray = new byte[imageFile.Size];
         await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
         string imageType = imageFile.ContentType;
-        
+
         // add original and data to idb
-        var addedResult = await AddImageDataToIDb(imageArray, imageFile.Name, imageType);
+        var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
         Console.WriteLine($"data added: {imageFile.Name}");
-        
+
         // add resized to idb
-        var addedResult2 = await AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
+        var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
         Console.WriteLine($"data added: {imageFile.Name}");
-        
-        //AddToThumbnailList(imageInfoList);
-        await SetThumbnailListIDb();
-        await SetImageDtoListIDb();
-        //SetImageSrcList();
-        StateHasChanged();
+
+        // pass image data to stateService/routing parameters
+        // or trigger an onClick function and pass image data
+
+        // go to editor
+        //NavigationManager.NavigateTo("editor");
+        GoToEditor(imageFile.Name);
+
+        // load resized images and generate thumbnails
+        //await LoadThumbnails();
+
+        //StateHasChanged();
     }
 
-    // old methods
-    public ImageDto GetImageDto(byte[] imageArr, string fileName, int maxKey, string imageType)
+    public async Task GoToEditor(string imageName)
     {
-        var item = new ImageDto
-            {
-                ImageId = maxKey,
-                ImageName = fileName,
-                ImageArray = imageArr,
-                ImageType = imageType
-            };
-        return item;
+        // save imageName to local storage
+        await LSManager.SaveImageName(imageName);
+        // save imageName to state service
+        //SService.ImageName = imageName;
+        //NavigationManager.NavigateTo($"editor/{imageName}");
+        NavigationManager.NavigateTo($"editor");
     }
 
-    public void AddToThumbnailList(List<ImageInfo> imageInfoList)
+    public async Task SetResizedImages()
     {
-        foreach(var imageInfo in imageInfoList)
+        resizedImages = await IndexedDbContext.GetAll<ImageResized>();
+        Console.WriteLine("SetResizedImages ended");
+    }
+
+    public async Task SetImageInfos()
+    {
+        imageInfos = new List<(string, string)>();
+        foreach(var image in resizedImages)
         {
-            thumbnailList.Add(imageInfo);
+            string src = await ImageProc.GetImageURL(image.ImageArray);
+            imageInfos.Add((src, image.ImageName));
         }
+        Console.WriteLine("SetImageInfos ended");
     }
 
-    public List<ImageInfo> GetImageInfo(string imageSrc, string fileName, int key)
+    public async Task LoadThumbnails()
     {
-        var items = new List<ImageInfo>
-        {
-            new ImageInfo
-            {
-                ImageId = key,
-                ImageName = fileName,
-                Thumbnail = imageSrc
-            }
-        };
-        Console.WriteLine("getimageinfo ended");
-        return items;
+        await SetResizedImages();
+        //await SetThumbnails();
+        await SetImageInfos();  
     }
+
+    //public async Task SetThumbnails()
+    //{
+    //    thumbnails = new List<string>();
+    //    foreach(var image in resizedImages)
+    //    {
+    //        string src = await ImageProc.GetImageURL(image.ImageArray);
+    //        thumbnails.Add(src);
+    //    }
+    //    Console.WriteLine("SetThumbnails ended");
+    //}
 
 }

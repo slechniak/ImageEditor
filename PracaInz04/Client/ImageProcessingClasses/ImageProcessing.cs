@@ -9,14 +9,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PracaInz04.Client.Services
+namespace PracaInz04.Client.ImageProcessingClasses
 {
     public class ImageProcessing
     {
-		[Inject]
-        public static IJSRuntime JS { get; private set; }
+        public IJSRuntime JS { get; set; }
 
-        public static byte[] ResizeImageSharp(byte[] imageArray, int width = 500)
+        public ImageProcessing(IJSRuntime jSRuntime)
+		{
+			JS = jSRuntime;
+		}
+
+		public byte[] ResizeImageSharp(byte[] imageArray, int width = 500)
 		{
 			byte[] imageResult = new byte[] { };
 			using (Image image = Image.Load(imageArray, out var imageFormat))
@@ -35,7 +39,7 @@ namespace PracaInz04.Client.Services
 			return imageResult;
 		}
 
-		public static byte[] ResizeSkia(byte[] imageArray)
+		public byte[] ResizeSkia(byte[] imageArray)
 		{
 			// rotate on upload
 			//using(Image image = Image.Load(imageArray, out var imageFormat))
@@ -75,7 +79,7 @@ namespace PracaInz04.Client.Services
 			return imageResult;
 		}
 
-		public static byte[] RotateSkia(byte[] imageArray)
+		public byte[] RotateSkia(byte[] imageArray)
 		{
 			byte[] imageResult = new byte[] { };
 			using SKBitmap bitmap = SKBitmap.Decode(imageArray);
@@ -93,18 +97,16 @@ namespace PracaInz04.Client.Services
 			return imageResult;
 		}
 
-		public static async Task<string> GetImageURL(byte[] imageArray)
+		public async Task<string> GetImageURL(byte[] imageArray)
 		{
-			Console.WriteLine("start url");
 			string imgSrc = string.Empty;
 			//imgSrc = await JS.InvokeAsync<string>("URL.createObjectURL", imageArray);
 			imgSrc = await JS.InvokeAsync<string>("createObjectURLFromBA", imageArray);
-			Console.WriteLine("stop url");
 			return imgSrc;
 		}
 
 		// slow
-		public static string GetImageSrc(byte[] imageArray)
+		public string GetImageSrc(byte[] imageArray)
 		{
 			string imgSrc;
 			using (Image image = Image.Load(imageArray, out var imageFormat))
