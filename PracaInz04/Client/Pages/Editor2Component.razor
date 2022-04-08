@@ -1,0 +1,54 @@
+﻿@*@page "/editor/{ImageName}"*@
+@page "/editor2"
+@inject StateService SService
+@inject LocalStorageManager LSManager
+@inject IndexedDbManager IDbManager
+@inject IndexedDbContext IndexedDbContext
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid h-100 d-flex flex-column border border-2 border-success">
+    <h5 class="font-weight-bold">Editor2Component: @ImageName</h5>
+    <div class="container-fluid flex-grow-1 d-flex flex-column border border-2 border-danger">
+        <div class="row flex-grow-1">
+            <div class="col-lg-8 bg-success d-flex flex-column">
+                @if(ImageName!=null && ImageName!="")
+                {
+                    <ImageView2Component></ImageView2Component>
+                }
+                else
+                {
+                    <UploadImageComponent></UploadImageComponent>
+                    <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>
+                }
+            </div>
+            <div class="col-lg-4 bg-info">
+                <Tools2Component></Tools2Component>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // initialize imageName in local storage on startup
+    public string? ImageName { get; set; }
+    public ImageResized ImageResizedTest { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //ImageName = SService.ImageName;
+        var openDbResult = await IndexedDbContext.OpenIndexedDb();
+        ImageName = await LSManager.GetImageName();
+        if(ImageName != null)
+        {
+           ImageResizedTest = await IDbManager.FetchImageResized(ImageName);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"ImageName: {ImageName}");
+
+        base.OnAfterRender(firstRender);
+    }
+
+}

@@ -7,25 +7,37 @@
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService LocalStorage
 @inject LocalStorageManager LSManager
-
-<h3>ImageListComponent</h3>
-<h6>List of images</h6>
+<div class="container-fluid h-100 overflow-auto">
+    <h5>ImageListComponent</h5>
     <div class="card-deck">
-        <div class="row">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+            <div class="col">
+                <div class="card">
+                    @*<img class="card-img-top" src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg" alt="Card image cap">*@
+                    <img class="card-img-top" src="images/placeholder.svg" alt="Card image cap">
+                    <div class="card-body">
+                        <h5 class="card-title">Upload an image</h5>
+                        @*<p class="card-text">Description</p>*@
+                        <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
+                    </div>
+                </div>
+            </div>
             @if(imageInfos.Count != 0)
             {
-                <p>list is not empty</p>
                 @foreach (var imageInfo in imageInfos)
                 {
-                    <div class="col-4">
+                    @*do sth with it*@
+                    <div class="col">
                         <div class="card">
                             <img class="card-img-top" src="@imageInfo.thumbnail" alt="Card image cap">
                             <div class="card-body">
                                 <h5 class="card-title">@imageInfo.name</h5>
                                 <p class="card-text">Image details</p>
-                                <button @onclick="() => GoToEditor(imageInfo.name)" class="btn btn-primary">Edit</button>
-                                <button class="btn btn-primary">Save</button>
-                                <button class="btn btn-primary">Delete</button>
+								<div class="d-flex justify-content-center">
+                                    <button @onclick="() => uploadImageComponent.GoToEditor(imageInfo.name)" class="btn btn-primary flex-fill mx-1">Edit</button>
+                                    <button class="btn btn-primary flex-fill mx-1">Save</button>
+                                    <button class="btn btn-primary flex-fill mx-1">Delete</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -35,22 +47,19 @@
             {
                 <p>list is empty</p>
             }
-            <div class="col-4">
+            @*<div class="col">
                 <div class="card">
                     <img class="card-img-top" src="..." alt="Card image cap">
                     <div class="card-body">
                         <h5 class="card-title">Upload an image</h5>
                         <p class="card-text">Description</p>
-                        <div class="custom-file">
-                            @*<InputFile OnChange="OnFileUpload"/>*@
-                            <label class="custom-file-label" for="customFile">Choose file</label>
-                            <InputFile OnChange="OnFileUpload" class="custom-file-input" id="customFile"/>
-                        </div>
+                        <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
                     </div>
                 </div>
-            </div>
+            </div>*@
         </div>
     </div>
+</div>
 
 @code {
 
@@ -63,8 +72,8 @@
     List<(string thumbnail,
           string name)> imageInfos = new List<(string, string)>();
 
-    // old comment
-    // make list of thumbnail images(strings) from imageDtoListResult
+    UploadImageComponent uploadImageComponent;
+
     protected override async Task OnInitializedAsync()
     {
         //is it getting called after state has changed?
@@ -77,44 +86,45 @@
 
     // code from idbtest
 
-    public async Task OnFileUpload(InputFileChangeEventArgs e)
-    {
-        // get image array, content type, other data
-        IBrowserFile imageFile = e.File;
-        byte[] imageArray = new byte[imageFile.Size];
-        await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
-        string imageType = imageFile.ContentType;
+    // before UploadImageComponent (onfileupload and gotoeditor)
+    //public async Task OnFileUpload(InputFileChangeEventArgs e)
+    //{
+    //    // get image array, content type, other data
+    //    IBrowserFile imageFile = e.File;
+    //    byte[] imageArray = new byte[imageFile.Size];
+    //    await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
+    //    string imageType = imageFile.ContentType;
 
-        // add original and data to idb
-        var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
-        Console.WriteLine($"data added: {imageFile.Name}");
+    //    // add original and data to idb
+    //    var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
+    //    Console.WriteLine($"data added: {imageFile.Name}");
 
-        // add resized to idb
-        var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
-        Console.WriteLine($"data added: {imageFile.Name}");
+    //    // add resized to idb
+    //    var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
+    //    Console.WriteLine($"data added: {imageFile.Name}");
 
-        // pass image data to stateService/routing parameters
-        // or trigger an onClick function and pass image data
+    //    // pass image data to stateService/routing parameters
+    //    // or trigger an onClick function and pass image data
 
-        // go to editor
-        //NavigationManager.NavigateTo("editor");
-        GoToEditor(imageFile.Name);
+    //    // go to editor
+    //    //NavigationManager.NavigateTo("editor");
+    //    GoToEditor(imageFile.Name);
 
-        // load resized images and generate thumbnails
-        //await LoadThumbnails();
+    //    // load resized images and generate thumbnails
+    //    //await LoadThumbnails();
 
-        //StateHasChanged();
-    }
+    //    //StateHasChanged();
+    //}
 
-    public async Task GoToEditor(string imageName)
-    {
-        // save imageName to local storage
-        await LSManager.SaveImageName(imageName);
-        // save imageName to state service
-        //SService.ImageName = imageName;
-        //NavigationManager.NavigateTo($"editor/{imageName}");
-        NavigationManager.NavigateTo($"editor");
-    }
+    //public async Task GoToEditor(string imageName)
+    //{
+    //    // save imageName to local storage
+    //    await LSManager.SaveImageName(imageName);
+    //    // save imageName to state service
+    //    //SService.ImageName = imageName;
+    //    //NavigationManager.NavigateTo($"editor/{imageName}");
+    //    NavigationManager.NavigateTo($"editor");
+    //}
 
     public async Task SetResizedImages()
     {

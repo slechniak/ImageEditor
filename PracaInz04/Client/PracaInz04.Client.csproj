@@ -43,6 +43,7 @@
   <ItemGroup>
     <Folder Include="BaseComponents\" />
     <Folder Include="DnetIndexedDb\wwwroot\" />
+    <Folder Include="wwwroot\images\" />
   </ItemGroup>
 
   <ItemGroup>

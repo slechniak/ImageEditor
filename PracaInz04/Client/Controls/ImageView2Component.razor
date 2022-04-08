@@ -1,0 +1,21 @@
+﻿@*@inject SService SService*@
+@inject IndexedDbContext IndexedDbContext
+
+@inherits SharedBaseComponent
+
+<h5 class="">ImageView2Component</h5>
+<div class="d-flex justify-content-center align-items-center flex-column flex-grow-1">
+    <img class="" src="images/placeholder.svg" alt="Card image cap" width="300">
+    @*<img class="img-fluid flex-grow-1" src="images/placeholder.svg" alt="Card image cap" width="300">*@
+</div>
+
+@code {
+
+    //string imgUrl = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        SService.OnChange += StateHasChanged;
+    }
+
+}

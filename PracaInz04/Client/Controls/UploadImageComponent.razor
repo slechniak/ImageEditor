@@ -1,0 +1,47 @@
+﻿@inject IndexedDbManager IDbManager
+@inject NavigationManager NavigationManager
+@inject LocalStorageManager LSManager
+
+<label for="formFile" class="form-label">Upload an image</label>
+<InputFile OnChange="OnFileUpload" class="form-control" id="customFile"/>
+
+@code {
+	public async Task OnFileUpload(InputFileChangeEventArgs e)
+    {
+        // get image array, content type, other data
+        IBrowserFile imageFile = e.File;
+        byte[] imageArray = new byte[imageFile.Size];
+        await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
+        string imageType = imageFile.ContentType;
+
+        // add original and data to idb
+        var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
+        Console.WriteLine($"data added: {imageFile.Name}");
+
+        // add resized to idb
+        var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
+        Console.WriteLine($"data added: {imageFile.Name}");
+
+        // pass image data to stateService/routing parameters
+        // or trigger an onClick function and pass image data
+
+        // go to editor
+        //NavigationManager.NavigateTo("editor");
+        GoToEditor(imageFile.Name);
+
+        // load resized images and generate thumbnails
+        //await LoadThumbnails();
+
+        //StateHasChanged();
+    }
+
+    public async Task GoToEditor(string imageName)
+    {
+        // save imageName to local storage
+        await LSManager.SaveImageName(imageName);
+        // save imageName to state service
+        //SService.ImageName = imageName;
+        //NavigationManager.NavigateTo($"editor/{imageName}");
+        NavigationManager.NavigateTo($"editor2");
+    }
+}
