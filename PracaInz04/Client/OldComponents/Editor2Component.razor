@@ -1,0 +1,58 @@
+﻿@*@page "/editor/{ImageName}"*@
+@page "/editor2"
+@inject StateService SService
+@inject LocalStorageManager LSManager
+@inject IndexedDbManager IDbManager
+@inject IndexedDbContext IndexedDbContext
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid d-flex flex-column h-100 border border-2 border-success">
+    <h6 class="font-weight-bold">Editor2Component: @ImageName</h6>
+    <div class="container-fluid d-flex flex-column flex-grow-1 border border-2 border-danger">
+        <div class="row flex-grow-1">
+            <div class="col-md-8 d-flex bg-success">
+                @if(ImageName!=null && ImageName!="")
+                {
+                    <div class="d-flex justify-content-center align-items-center flex-grow-1">
+                        @*<ImageView2Component></ImageView2Component>*@
+                        @*<img class="mw-100 mh-100" src="images/placeholder.svg" alt="Card image cap">*@
+                        <img class="mw-100 mh-100" src="images/cat01_500.jpg" alt="Card image cap">
+                    </div>
+                }
+                else
+                {
+                    <UploadImageComponent></UploadImageComponent>
+                    <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>
+                }
+            </div>
+            <div class="col-md-4 bg-info">
+                <Tools2Component></Tools2Component>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // initialize imageName in local storage on startup
+    public string? ImageName { get; set; }
+    public ImageResized ImageResizedTest { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //ImageName = SService.ImageName;
+        var openDbResult = await IndexedDbContext.OpenIndexedDb();
+        ImageName = await LSManager.GetImageName();
+        if(ImageName != null)
+        {
+           ImageResizedTest = await IDbManager.FetchImageResized(ImageName);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine($"ImageName: {ImageName}");
+
+        base.OnAfterRender(firstRender);
+    }
+
+}

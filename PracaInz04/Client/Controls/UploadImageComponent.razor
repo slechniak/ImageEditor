@@ -2,7 +2,7 @@
 @inject NavigationManager NavigationManager
 @inject LocalStorageManager LSManager
 
-<label for="formFile" class="form-label">Upload an image</label>
+<label for="formFile" class="form-label fw-bold lead">Upload an image</label>
 <InputFile OnChange="OnFileUpload" class="form-control" id="customFile"/>
 
 @code {
@@ -42,6 +42,6 @@
         // save imageName to state service
         //SService.ImageName = imageName;
         //NavigationManager.NavigateTo($"editor/{imageName}");
-        NavigationManager.NavigateTo($"editor2");
+        NavigationManager.NavigateTo($"editor3");
     }
 }

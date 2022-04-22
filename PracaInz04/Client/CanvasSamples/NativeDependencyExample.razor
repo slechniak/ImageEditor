@@ -6,7 +6,7 @@
 
 <h1>Native dependency example with SkiaSharp</h1>
 
-<SKCanvasView OnPaintSurface="@OnPaintSurface" />
+<SKCanvasView OnPaintSurface="@OnPaintSurface"  class="border"/>
 
 @code {
     private void OnPaintSurface(SKPaintSurfaceEventArgs e)
@@ -21,6 +21,6 @@
             IsAntialias = true,
             TextSize = 24
         };
-        canvas.DrawText("SkiaSharp", 0, 24, paint);
+        canvas.DrawText("SkiaSharp", 20, 40, paint);
     }
 }

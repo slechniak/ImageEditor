@@ -71,5 +71,12 @@ namespace PracaInz04.Client.IndexedDbClasses
             //var result = await this.GetByIndex<string, ImageResized>(imageName, ImageNameIndex);
             return result.First();
         }
+
+        public async Task<ImageData> FetchImageData(string imageName)
+        {
+            var result = await IndexedDbContext.GetByIndex<string, ImageData>(imageName, null, ImageNameIndex, false);
+            //var result = await this.GetByIndex<string, ImageResized>(imageName, ImageNameIndex);
+            return result.First();
+        }
     }
 }

@@ -1,19 +1,22 @@
-﻿@*@page "/editor/{ImageName}"*@
-@page "/editor2"
+﻿@page "/editorlayout"
 @inject StateService SService
 @inject LocalStorageManager LSManager
 @inject IndexedDbManager IDbManager
 @inject IndexedDbContext IndexedDbContext
 @inject NavigationManager NavigationManager
 
-<div class="container-fluid h-100 d-flex flex-column border border-2 border-success">
-    <h5 class="font-weight-bold">Editor2Component: @ImageName</h5>
-    <div class="container-fluid flex-grow-1 d-flex flex-column border border-2 border-danger">
-        <div class="row flex-grow-1">
-            <div class="col-lg-8 bg-success d-flex flex-column">
+<div class="editor h-100 d-flex p-0">
+    @*<h6 class="font-weight-bold">Editor2Component: @ImageName</h6>*@
+    <div class="container-fluid h-100 d-flex border border-2 border-danger">
+        <div class="row flex-grow-1 border border-2 border-dark">
+            <div class="col-md-8 mh-100 d-flex justify-content-center align-items-center bg-success">
                 @if(ImageName!=null && ImageName!="")
                 {
-                    <ImageView2Component></ImageView2Component>
+                    
+                        @*<ImageView2Component></ImageView2Component>*@
+                        @*<img class="mw-100 mh-100" src="images/placeholder.svg" alt="Card image cap">*@
+                        <img class="mw-100 mh-100" src="images/cat01_500.jpg" alt="Card image cap">
+                   
                 }
                 else
                 {
@@ -21,7 +24,7 @@
                     <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>
                 }
             </div>
-            <div class="col-lg-4 bg-info">
+            <div class="col-md-4 mh-100 bg-primary">
                 <Tools2Component></Tools2Component>
             </div>
         </div>

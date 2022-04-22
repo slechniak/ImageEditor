@@ -10,6 +10,8 @@ namespace PracaInz04.Client.Services
 {
     public class StateService
     {
+        public byte[] ImageArray { get; set; }
+
         public string ImageName { get; set; }
 
         // old

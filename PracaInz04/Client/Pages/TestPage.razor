@@ -1,0 +1,204 @@
+﻿@page "/testpage"
+
+@inject StateService SService
+@inject LocalStorageManager LSManager
+@inject IndexedDbManager IDbManager
+@inject IndexedDbContext IndexedDbContext
+@inject NavigationManager NavigationManager
+@inject ImageProcessing ImageProc
+
+<div class="container-fluid bg-primary h-100">
+	<div class="row bg-success h-100">
+        @*had h-100*@
+		<div class="col-md-9 bg-warning d-flex align-items-center justify-content-center mh-100">
+            @if(ImageName!=null && ImageName!="")
+            {
+                @*<img class="mw-100 mh-100" src="images/placeholder.svg" alt="Card image cap">*@
+                @*<img class="mw-100 mh-100" width="750" src="images/cat01_500.jpg" alt="Card image cap"> *@
+                @*<img class="mw-100 mh-100" width="750" src="@testSrc2" alt="Card image cap"> *@
+
+                @*<img @ref="imgReference" hidden src="images/cat01_500.jpg"> *@
+                @*<img @ref="imgReference" hidden src="@testSrc"> *@
+                @*<BECanvas Width="500" Height="500" @ref="_canvasReference" ></BECanvas>*@
+
+                <SKCanvasView 
+                    @ref="skiaView" 
+                    @onmousewheel="OnMouseWheel"
+                    OnPaintSurface="@OnPaintSurface"
+                    IgnorePixelScaling="false" 
+                    @attributes="CanvasAttributes" 
+                    class="border mw-100 mh-100 w-100 h-100"
+                    style="image-rendering: pixelated;"/>
+            }
+            else
+            {
+                <div class="text-center">
+                    <UploadImageComponent></UploadImageComponent>
+                    <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>
+                </div>
+            }
+		</div>
+		<div class="col-md-3 bg-info">
+			<Tools2Component></Tools2Component>
+		</div>
+	</div>
+</div>
+
+@code {
+    // initialize imageName in local storage on startup
+    public string? ImageName { get; set; }
+    public ImageResized imageResized { get; set; }
+    public SKBitmap sKBitmap { get; set; }
+
+    public string testSrc { get; set; }
+    public string testSrc2 { get; set; }
+    SKCanvasView skiaView = null!;
+    float scrollScale = 1;
+
+    private Dictionary<string, object> CanvasAttributes { get; set; }
+    //new()
+    //{
+    //    { "width", "500" },
+    //    { "height", "500" }
+    //};
+
+    //private Canvas2DContext _context;
+    //protected BECanvasComponent _canvasReference;
+    //protected ElementReference imgReference;
+
+    private void OnPaintSurface(SKPaintSurfaceEventArgs e)
+    {
+        SKImageInfo info = e.Info;
+        SKSurface surface = e.Surface;
+        SKCanvas canvas = surface.Canvas;
+
+        canvas.Clear();
+
+        float scale = Math.Min((float)info.Width / sKBitmap.Width, 
+                               (float)info.Height / sKBitmap.Height);
+        float x = (info.Width - scale * scrollScale * sKBitmap.Width) / 2;
+        float y = (info.Height - scale * scrollScale *sKBitmap.Height) / 2;
+        SKRect destRect = new SKRect(x, y, x + scale * scrollScale *sKBitmap.Width, 
+                                           y + scale * scrollScale *sKBitmap.Height);
+
+        canvas.DrawBitmap(sKBitmap, destRect);
+        Console.WriteLine("painted");
+    }
+
+    private void OnMouseWheel(WheelEventArgs e)
+    {
+        // scroll up / zoom in
+        //if(e.DeltaY > 0)
+        //{
+        //    if (scrollScale < 10)
+        //    {
+        //        if (scrollScale < 1)
+        //            scrollScale = (float)Math.Round(scrollScale + 0.1f, 1);
+        //        else
+        //            scrollScale = (float)Math.Round(scrollScale + 1, 0);
+        //    }
+        //}
+        //else
+        //{
+        //    if (scrollScale > 0.2)
+        //    {
+        //        if (scrollScale <= 1)
+        //            scrollScale = (float)Math.Round(scrollScale - 0.1f, 1);
+        //        else
+        //            scrollScale = (float)Math.Round(scrollScale - 1, 0);
+        //    }
+        //}
+
+        if(e.DeltaY > 0)
+        {
+            if (scrollScale < 2)
+            {
+                scrollScale = (float)Math.Round(scrollScale + 0.1f, 1);
+            }
+        }
+        else
+        {
+            if (scrollScale > 0.2)
+            {
+                 scrollScale = (float)Math.Round(scrollScale - 0.1f, 1);
+            }
+        }
+        Console.WriteLine($"{e.DeltaY}, {scrollScale}");
+        skiaView.Invalidate();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //ImageName = SService.ImageName;
+        var openDbResult = await IndexedDbContext.OpenIndexedDb();
+        ImageName = await LSManager.GetImageName();
+        if(ImageName != null)
+        {
+            Console.WriteLine($"ImageName: {ImageName}");
+            imageResized = await IDbManager.FetchImageResized(ImageName);
+            if(imageResized != null)
+            {
+                sKBitmap = SKBitmap.Decode(imageResized.ImageArray);
+
+                testSrc = await ImageProc.GetImageURL(imageResized.ImageArray);
+            }
+
+            var imageData = await IDbManager.FetchImageData(ImageName);
+            if(imageData != null)
+            {
+                sKBitmap = SKBitmap.Decode(imageData.ImageArray);
+
+                //int w = 1000;
+                //CanvasAttributes = new Dictionary<string, object> 
+                //{{ "width", $"{w}" },
+                //{ "height", $"{(int)(((float)w/sKBitmap.Width)*sKBitmap.Height)}" }};
+
+                //CanvasAttributes = new Dictionary<string, object> 
+                //{{ "width", $"{sKBitmap.Width}" },
+                //{ "height", $"{sKBitmap.Height}" }};
+
+                testSrc2 = await ImageProc.GetImageURL(imageData.ImageArray);
+            }
+        }
+
+        //testSrc = await TestStuff();
+    }
+
+    //public async Task<string> TestStuff()
+    //{
+    //    var testImage = await IDbManager.FetchImageResized(ImageName);
+    //    var imageSrc = await ImageProc.GetImageURL(testImage.ImageArray);
+
+    //    return imageSrc;
+    //}
+
+    //public async Task SetupBECanvas()
+    //{
+    //    if(_canvasReference != null)
+    //        _context = await _canvasReference.CreateCanvas2DAsync();
+    //    //await this._context.SetFillStyleAsync("green");
+
+    //    //await this._context.FillRectAsync(10, 100, 100, 100);
+
+    //    //await this._context.SetFontAsync("48px serif");
+    //    //await this._context.StrokeTextAsync("Hello Blazor!!!", 10, 100);
+
+    //    if(_context != null)
+    //        await _context.DrawImageAsync(imgReference,0,0);
+
+    //        StateHasChanged();
+    //}
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        //{
+        //    await SetupBECanvas();
+        //}
+
+
+
+        base.OnAfterRender(firstRender);
+    }
+
+}
