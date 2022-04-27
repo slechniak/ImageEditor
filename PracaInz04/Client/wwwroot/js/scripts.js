@@ -4,3 +4,7 @@
 
     return blobURL;
 }
+
+function windowDevicePixelRatio() {
+    return window.devicePixelRatio;
+}
