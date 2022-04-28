@@ -53,7 +53,10 @@
             <button class="btn btn-primary" @onclick="ResetPanOffset">Center image</button>
             <br />
             <br />
-            <button class="btn btn-primary" @onclick="ResetScale">Reset Scale</button>
+            <button class="btn btn-primary" @onclick="ResetScale">Reset scale</button>
+            <br />
+            <br />
+            <button class="btn btn-primary" @onclick="CropImage">Crop image</button>
 		</div>
 	</div>
 </div>
@@ -92,6 +95,71 @@
     //    { "height", "500" }
     //};
 
+    private void CropImage()
+    {
+        float viewToBitmapRatio = (float)sKBitmap.Width / bitmapRect.Width;
+
+        //(float x, float y) scaledOffset;
+        //scaledOffset.x = selectOffset.x * viewToBitmapRatio;
+        //scaledOffset.y = selectOffset.y * viewToBitmapRatio;
+
+        // swap selection start and end
+        if(selectRect.Left > selectRect.Right)
+        {
+            float tLeft = selectRect.Left;
+            selectRect.Left = selectRect.Right;
+            selectRect.Right = tLeft;
+        }
+
+        if(selectRect.Top > selectRect.Bottom)
+        {
+            float tTop = selectRect.Top;
+            selectRect.Top = selectRect.Bottom;
+            selectRect.Bottom = tTop;
+        }
+
+        // dodac poczatek bitmapy do selectRect
+        selectRect.Left -= bitmapRect.Left;
+        selectRect.Top -= bitmapRect.Top;
+        selectRect.Right -= bitmapRect.Left;
+        selectRect.Bottom -= bitmapRect.Top;
+
+        // sortuj wierzcholki?
+        SKRect cropRect = SKRect.Empty;
+        cropRect.Left = selectRect.Left * viewToBitmapRatio;
+        cropRect.Top = selectRect.Top * viewToBitmapRatio;
+        cropRect.Right = selectRect.Right * viewToBitmapRatio;
+        cropRect.Bottom = selectRect.Bottom * viewToBitmapRatio;
+
+        SKRect dest = new SKRect(0, 0, cropRect.Width, cropRect.Height);
+
+        SKBitmap croppedBitmap = new SKBitmap((int)cropRect.Width, (int)cropRect.Height);
+
+        //Console.WriteLine($"viewToBitmapRatio: {viewToBitmapRatio}");
+        //Console.WriteLine($"sKBitmap ratio: {(float)sKBitmap.Width / sKBitmap.Height}");
+        //Console.WriteLine($"bitmapRect ratio: {bitmapRect.Width / bitmapRect.Height}");
+        //Console.WriteLine($"selectRect: {selectRect.Width}, {selectRect.Height}");
+        //Console.WriteLine($"        : ({selectRect.Left}, {selectRect.Top})");
+        //Console.WriteLine($"        : ({selectRect.Right}, {selectRect.Bottom})");
+
+        //Console.WriteLine($"sKBitmap: {sKBitmap.Width}, {sKBitmap.Height}");
+        //Console.WriteLine($"cropRect: {cropRect.Width}, {cropRect.Height}");
+        //Console.WriteLine($"        : ({cropRect.Left}, {cropRect.Top})");
+        //Console.WriteLine($"        : ({cropRect.Right}, {cropRect.Bottom})");
+        //Console.WriteLine($"croppedBitmap: {croppedBitmap.Width}, {croppedBitmap.Height}");
+
+        using (SKCanvas canvas = new SKCanvas(croppedBitmap))
+        {
+            canvas.DrawBitmap(sKBitmap, cropRect, dest);
+        }
+        sKBitmap = croppedBitmap;
+
+        scrollScale = 1;
+        selectRect = SKRect.Empty;
+
+        skiaView.Invalidate();
+    }
+
     private void ResetPanOffset()
     {
         panOffset = (0, 0);
@@ -115,8 +183,8 @@
         canvas.Clear();
 
         // nie obliczac od nowa, jezeli nie zmieniła się scroll skala
-        if (scrollScaleChanged || isMiddle)
-        {
+        //if (scrollScaleChanged || isMiddle)
+        //{
             float scale = Math.Min((float)info.Width / sKBitmap.Width,
                                   (float)info.Height / sKBitmap.Height);
             float x = (info.Width - scale * scrollScale * sKBitmap.Width) / 2;
@@ -137,7 +205,7 @@
             bitmapRect.Top += panOffset.y * scrollScale;
             bitmapRect.Right += panOffset.x * scrollScale;
             bitmapRect.Bottom += panOffset.y * scrollScale;
-        }
+        //}
         scrollScaleChanged = false;
 
         canvas.DrawBitmap(sKBitmap, bitmapRect);
@@ -418,9 +486,9 @@
             imageResized = await IDbManager.FetchImageResized(ImageName);
             if(imageResized != null)
             {
-                sKBitmap = SKBitmap.Decode(imageResized.ImageArray);
+                //sKBitmap = SKBitmap.Decode(imageResized.ImageArray);
 
-                testSrc = await ImageProc.GetImageURL(imageResized.ImageArray);
+                //testSrc = await ImageProc.GetImageURL(imageResized.ImageArray);
             }
 
             var imageData = await IDbManager.FetchImageData(ImageName);
