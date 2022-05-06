@@ -25,3 +25,15 @@ class WindowDPRHelper {
 }
 
 window.WindowDPRHelper = WindowDPRHelper;
+
+function onKeyPressed(e) {
+    if (!e.repeat) {
+        WindowDPRHelper.dotNetHelper.invokeMethodAsync('OnKeyPressedJS', e.ctrlKey, e.shiftKey, e.code);
+    }
+    //console.log(e.code);
+};
+
+function attachHandlers() {
+    document.removeEventListener('keydown', onKeyPressed);
+    document.addEventListener('keydown', onKeyPressed);
+};
