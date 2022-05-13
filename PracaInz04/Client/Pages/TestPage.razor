@@ -117,6 +117,9 @@
     bool makeSelectRect = false;
     int minAngle = -90;
     int maxAngle = 90;
+    float infoMiddleX, infoMiddleY;
+    SKPath BSB2, tiltedBPath;
+    SKPoint[] P = { };
 
     private Dictionary<string, object> CanvasAttributes { get; set; }
     //new(){{ "width", "500" },{ "height", "500" }};
@@ -136,7 +139,7 @@
             ResetTilt();
         else
             TiltImage();
-        Console.WriteLine(e.Value);
+        //Console.WriteLine(e.Value);
 
     }
 
@@ -178,18 +181,24 @@
     {
         //Console.WriteLine("tiltedBitmapCorners:");
         //DisplayPoint(tiltedBitmapCorners[0]);
-        //DisplayPoint(tiltedBitmapCorners[1]);
-        //DisplayPoint(tiltedBitmapCorners[2]);
-        //DisplayPoint(tiltedBitmapCorners[3]);
 
         SKPoint Atb = tiltedBitmapCorners[0];
         SKPoint Btb = tiltedBitmapCorners[1];
-        SKPoint B = new SKPoint(tiltedBitmapRect.Right, tiltedBitmapRect.Top);
-        SKPoint? ip1 = IntersectionPoint(Atb, Btb, S, B);
-
+        SKPoint Ctb = tiltedBitmapCorners[2];
         SKPoint Dtb = tiltedBitmapCorners[3];
         SKPoint A = new SKPoint(tiltedBitmapRect.Left, tiltedBitmapRect.Top);
-        SKPoint? ip2 = IntersectionPoint(Atb, Dtb, S, A);
+        SKPoint B = new SKPoint(tiltedBitmapRect.Right, tiltedBitmapRect.Top);
+        SKPoint? ip1, ip2;
+        if (tiltAngle > 0)
+        {
+            ip1 = IntersectionPoint(Atb, Btb, S, B);
+            ip2 = IntersectionPoint(Atb, Dtb, S, A);
+        }
+        else
+        {
+            ip1 = IntersectionPoint(Atb, Btb, S, A);
+            ip2 = IntersectionPoint(Btb, Ctb, S, B);
+        }
         SKPoint startPoint = new SKPoint();
         SKPoint endPoint = new SKPoint();
         if (ip1 != null && ip2 != null)
@@ -218,8 +227,8 @@
         SKImageInfo info = e.Info;
         SKSurface surface = e.Surface;
         SKCanvas canvas = surface.Canvas;
-        float infoMiddleX = info.Width / 2;
-        float infoMiddleY = info.Height / 2;
+        infoMiddleX = info.Width / 2;
+        infoMiddleY = info.Height / 2;
 
         canvas.Clear();
 
@@ -297,11 +306,11 @@
             // tilt unselected (bitmapRect)
             SKMatrix result = SKMatrix.CreateRotationDegrees(tiltAngle, infoMiddleX, infoMiddleY);
             unselected.Transform(result);
+            tiltedBitmapCorners = unselected.Points;
+            tiltedBitmapRect = unselected.Bounds;
             // calculate selectRect
             if (makeSelectRect)
             {
-                tiltedBitmapCorners = unselected.Points;
-                tiltedBitmapRect = unselected.Bounds;
                 GenerateSelectRect(new SKPoint(infoMiddleX, infoMiddleY));
                 makeSelectRect = false;
             }
@@ -312,7 +321,7 @@
         {
             if(!isDown)
                 AdjustSelection();
-            Console.WriteLine($"{selectRect.Left}, {selectRect.Top}");
+            //Console.WriteLine($"{selectRect.Left}, {selectRect.Top}");
 
             SKColor selectionColor = SKColors.White;
             SKPaint paint = new SKPaint()
@@ -352,13 +361,14 @@
     }
 
     // rotating selectRect doesnt work properly for both AdjustSelection()s
-    // (rotating multiple times)
+    // (rotating multiple times fast)
     // using skiasharp matrix transform
-    private void AdjustSelection()
+    private void AdjustSelection2()
     {
-        //
+        //s1
         if(rotateSelect)
         {
+            //Console.WriteLine(")))))))))))))))))))");
             float viewtoBitmapRatio = bitmapRect.Width / (float)sKBitmap.Width;
             SKMatrix scaleR = SKMatrix.CreateScale(viewtoBitmapRatio, viewtoBitmapRatio);
             SKMatrix resultR = SKMatrix.CreateIdentity();
@@ -369,7 +379,7 @@
             selectOffset.y = selectRect.Top;
 
             SKMatrix translateR = SKMatrix.CreateTranslation(bitmapRect.Left, bitmapRect.Top);
-            
+
             resultR = SKMatrix.CreateIdentity();
             SKMatrix.PreConcat(ref resultR, translateR);
             selectRect = resultR.MapRect(selectRect);
@@ -377,9 +387,9 @@
             SetSelectOriginal();
             rotateSelect = false;
         }
-        //
+        //e1
 
-        // selectRectOriginal jest dla scrollscale = 1
+        // selectRectOriginal to selectRect dla scrollscale = 1
         // skalowanie selectRect
         // powinno byc zastosowane na selectRectOriginal
         SKMatrix scale = SKMatrix.CreateScale(scrollScale, scrollScale);
@@ -389,32 +399,39 @@
 
         // potrzebne do przeniesienia selectRect do poczatku bitmapRect
         // tu pewnie problem ze zmianą selekcji przy zaznaczeniu SE -> NW
-        SKMatrix translate1 = SKMatrix.CreateTranslation(-selectRect.Left, -selectRect.Top);
-
-        // przeniesienie selectRect do poczatku bitmapRect
-        SKMatrix translate2 = SKMatrix.CreateTranslation(bitmapRect.Left, bitmapRect.Top);
+        //SKMatrix translate1 = SKMatrix.CreateTranslation(-selectOffset.x, -selectOffset.y);
+        //SKMatrix translate1 = SKMatrix.CreateTranslation(-selectRect.Left, -selectRect.Top);
+        selectRect.Right -= selectRect.Left;
+        selectRect.Bottom -= selectRect.Top;
+        selectRect.Left = 0;
+        selectRect.Top = 0;
 
         // skalowanie offsetu selectRect wzgledem poczatku bitmapRect
         selectOffset.x = selectOffsetOriginal.x * scrollScale;
         selectOffset.y = selectOffsetOriginal.y * scrollScale;
 
-        // przeniesienie selectRect o selectOffset
-        SKMatrix translate3 = SKMatrix.CreateTranslation(selectOffset.x, selectOffset.y);
+        // przeniesienie selectRect do poczatku bitmapRect + selectOffset
+        SKMatrix translate2 = SKMatrix.CreateTranslation(bitmapRect.Left + selectOffset.x,
+                                                         bitmapRect.Top + selectOffset.y);
 
-        // macierz transformacji + transfromacja selectRect
+        // przeniesienie selectRect o selectOffset
+        //SKMatrix translate3 = SKMatrix.CreateTranslation(selectOffset.x, selectOffset.y);
+
+        // macierz transformacji + transformacja selectRect
         result = SKMatrix.CreateIdentity();
-        SKMatrix.PreConcat(ref result, translate3);
+        //SKMatrix.PreConcat(ref result, translate3);
         SKMatrix.PreConcat(ref result, translate2);
-        SKMatrix.PreConcat(ref result, translate1);
+        //SKMatrix.PreConcat(ref result, translate1);
         selectRect = result.MapRect(selectRect);
     }
 
-    // manual manipulation
-    private void AdjustSelection2()
+    // manual manipulation 2 - works with: create sR > move sr(L,T) > scale
+    private void AdjustSelection()
     {
         //
         if(rotateSelect)
         {
+            //Console.WriteLine("test AdjustSelection > rotateSelect");
             float viewtoBitmapRatio = bitmapRect.Width / (float)sKBitmap.Width;
             SKMatrix result = SKMatrix.CreateIdentity();
             SKMatrix scale = SKMatrix.CreateScale(viewtoBitmapRatio, viewtoBitmapRatio);
@@ -444,20 +461,75 @@
         selectRect.Top = selectRectOriginal.Top * scrollScale;
         selectRect.Right = selectRectOriginal.Right * scrollScale;
         selectRect.Bottom = selectRectOriginal.Bottom * scrollScale;
-        
+
         // potrzebne do przeniesienia selectRect do poczatku bitmapRect
         // tu pewnie problem ze zmianą selekcji przy zaznaczeniu SE -> NW
         selectRect.Right -= selectRect.Left;
         selectRect.Bottom -= selectRect.Top;
         selectRect.Left = 0;
         selectRect.Top = 0;
-        
+
+        // skalowanie offsetu selectRect wzgledem poczatku bitmapRect
+        selectOffset.x = selectOffsetOriginal.x * scrollScale;
+        selectOffset.y = selectOffsetOriginal.y * scrollScale;
+
+        // przeniesienie selectRect do poczatku bitmapRect + selectOffset
+        selectRect.Left += bitmapRect.Left + selectOffset.x;
+        selectRect.Top += bitmapRect.Top + selectOffset.y;
+        selectRect.Right += bitmapRect.Left + selectOffset.x;
+        selectRect.Bottom += bitmapRect.Top + selectOffset.y;
+    }
+
+    // manual manipulation original - works with: create sR > move sr(L,T) > scale
+    private void AdjustSelection3()
+    {
+        //
+        if(rotateSelect)
+        {
+            //Console.WriteLine(")))))))))))))))))))");
+            float viewtoBitmapRatio = bitmapRect.Width / (float)sKBitmap.Width;
+            SKMatrix result = SKMatrix.CreateIdentity();
+            SKMatrix scale = SKMatrix.CreateScale(viewtoBitmapRatio, viewtoBitmapRatio);
+            //result.PreConcat(scale);
+            SKMatrix.PreConcat(ref result, scale);
+            ShowSKMatrix(result, $"scale {viewtoBitmapRatio}");
+            selectRect = result.MapRect(selectRect);
+
+            selectOffset.x = selectRect.Left;
+            selectOffset.y = selectRect.Top;
+
+            result = SKMatrix.CreateIdentity();
+            SKMatrix translate = SKMatrix.CreateTranslation(bitmapRect.Left, bitmapRect.Top);
+            //result.PreConcat(translate);
+            SKMatrix.PreConcat(ref result, translate);
+            ShowSKMatrix(result, $"translate {bitmapRect.Left} {bitmapRect.Top}");
+            selectRect = result.MapRect(selectRect);
+
+            SetSelectOriginal();
+            rotateSelect = false;
+        }
+        //
+
+        // selectRectOriginal jest dla scrollscale = 1
+        // skalowanie selectRect
+        selectRect.Left = selectRectOriginal.Left * scrollScale;
+        selectRect.Top = selectRectOriginal.Top * scrollScale;
+        selectRect.Right = selectRectOriginal.Right * scrollScale;
+        selectRect.Bottom = selectRectOriginal.Bottom * scrollScale;
+
+        // potrzebne do przeniesienia selectRect do poczatku bitmapRect
+        // tu pewnie problem ze zmianą selekcji przy zaznaczeniu SE -> NW
+        selectRect.Right -= selectRect.Left;
+        selectRect.Bottom -= selectRect.Top;
+        selectRect.Left = 0;
+        selectRect.Top = 0;
+
         // przeniesienie selectRect do poczatku bitmapRect
         selectRect.Left += bitmapRect.Left;
         selectRect.Top += bitmapRect.Top;
         selectRect.Right += bitmapRect.Left;
         selectRect.Bottom += bitmapRect.Top;
-        
+
         // skalowanie offsetu selectRect wzgledem poczatku bitmapRect
         selectOffset.x = selectOffsetOriginal.x * scrollScale;
         selectOffset.y = selectOffsetOriginal.y * scrollScale;
@@ -551,8 +623,8 @@
 
     public void FlipImage(bool isHorizontal)
     {
-        sKBitmap = FlipBitmap(isHorizontal);
-        AddBitmap(sKBitmap);
+        //sKBitmap = FlipBitmap(isHorizontal);
+        AddBitmap(FlipBitmap(isHorizontal));
         if(selectRect != SKRect.Empty)
             FlipRect2(isHorizontal);
         ResetPanOffset();
@@ -584,7 +656,46 @@
         return flippedBitmap;
     }
 
+    // using skmatrix transforms
     public void FlipRect2(bool isHorizontal)
+    {
+        SKMatrix translate1, translate2, translate3, scale;
+
+        //selectRect.Left -= bitmapRect.Left;
+        //selectRect.Top -= bitmapRect.Top;
+        //selectRect.Right -= bitmapRect.Left;
+        //selectRect.Bottom -= bitmapRect.Top;
+        translate1 = SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top);
+
+        var result = SKMatrix.CreateIdentity();
+        if (isHorizontal)
+        { 
+            translate2 = SKMatrix.CreateTranslation(bitmapRect.Width, 0);
+            scale = SKMatrix.CreateScale(-1, 1);
+        }
+        else
+        { 
+            translate2 = SKMatrix.CreateTranslation(0, bitmapRect.Height);
+            scale = SKMatrix.CreateScale(1, -1);
+        }
+
+        //selectRect.Left += bitmapRect.Left;
+        //selectRect.Top += bitmapRect.Top;
+        //selectRect.Right += bitmapRect.Left;
+        //selectRect.Bottom += bitmapRect.Top;
+        translate3 = SKMatrix.CreateTranslation(bitmapRect.Left, bitmapRect.Top);
+
+        SKMatrix.PreConcat(ref result, translate3);
+        SKMatrix.PreConcat(ref result, translate2);
+        SKMatrix.PreConcat(ref result, scale);
+        SKMatrix.PreConcat(ref result, translate1);
+        selectRect = result.MapRect(selectRect);
+
+        SetUpNewSelectRect();
+    }
+
+    // original FlipRect2
+    public void FlipRect3(bool isHorizontal)
     {
         selectRect.Left -= bitmapRect.Left;
         selectRect.Top -= bitmapRect.Top;
@@ -619,8 +730,8 @@
     {
         if(selectRect != SKRect.Empty)
             RotateRect3();
-        sKBitmap = RotateBitmap();
-        AddBitmap(sKBitmap);
+        //sKBitmap = RotateBitmap();
+        AddBitmap(RotateBitmap());
         ResetPanOffset();
         //ResetScale();
 
@@ -641,14 +752,38 @@
         return rotatedBitmap;
     }
 
+    // both RotateRect()s dont work properly for clicking rotate fast 
+    // skmatrix transforms
     public void RotateRect3()
+    {
+        SKMatrix rotate, scale, translate1, translate2;
+        SKMatrix result = SKMatrix.CreateIdentity();
+        //SKMatrix translate = SKMatrix.CreateTranslation(-selectOffset.x, -selectOffset.y);
+        translate1 = SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top);
+        float bitmaptoViewRatio = (float)sKBitmap.Width / bitmapRect.Width;
+        scale = SKMatrix.CreateScale(bitmaptoViewRatio, bitmaptoViewRatio);
+        rotate = SKMatrix.CreateRotationDegrees(90);
+        translate2 = SKMatrix.CreateTranslation(sKBitmap.Height, 0);
+
+        SKMatrix.PreConcat(ref result, translate2);
+        SKMatrix.PreConcat(ref result, rotate);
+        SKMatrix.PreConcat(ref result, scale);
+        SKMatrix.PreConcat(ref result, translate1);
+        selectRect = result.MapRect(selectRect);
+
+        OrderSelectRect();
+        rotateSelect = true;
+    }
+
+    // original RotateRect3
+    public void RotateRect4()
     {
         SKMatrix result = SKMatrix.CreateIdentity();
         //SKMatrix translate = SKMatrix.CreateTranslation(-selectOffset.x, -selectOffset.y);
         SKMatrix translate = SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top);
         //result.PreConcat(translate);
         SKMatrix.PreConcat(ref result, translate);
-        ShowSKMatrix(result, $"translate {-bitmapRect.Left}, {-bitmapRect.Top}");
+        //ShowSKMatrix(result, $"translate {-bitmapRect.Left}, {-bitmapRect.Top}");
         selectRect = result.MapRect(selectRect);
 
         float bitmaptoViewRatio = (float)sKBitmap.Width / bitmapRect.Width;
@@ -656,7 +791,7 @@
         SKMatrix scale = SKMatrix.CreateScale(bitmaptoViewRatio, bitmaptoViewRatio);
         //result.PreConcat(scale);
         SKMatrix.PreConcat(ref result, scale);
-        ShowSKMatrix(result, $"scale {bitmaptoViewRatio}");
+        //ShowSKMatrix(result, $"scale {bitmaptoViewRatio}");
         selectRect = result.MapRect(selectRect);
 
         result = SKMatrix.CreateRotationDegrees(90);
@@ -667,7 +802,7 @@
         translate = SKMatrix.CreateTranslation(sKBitmap.Height, 0);
         //result.PreConcat(translate);
         SKMatrix.PreConcat(ref result, translate);
-        ShowSKMatrix(result, $"translate {sKBitmap.Height} {0}");
+        //ShowSKMatrix(result, $"translate {sKBitmap.Height} {0}");
         selectRect = result.MapRect(selectRect);
 
         //result = SKMatrix.CreateIdentity();
@@ -709,6 +844,7 @@
 
     private void AddBitmap(SKBitmap bitmap)
     {
+        sKBitmap = bitmap;
         //int imax = 5;
         if(currentIndex < lastBitmaps.Count - 1)
         {
@@ -752,26 +888,31 @@
     {
         if (selectRect != SKRect.Empty)
         {
+            SKMatrix scale, translate, result;
             float bitmapToViewRatio = (float)sKBitmap.Width / bitmapRect.Width;
-
-            //(float x, float y) scaledOffset;
-            //scaledOffset.x = selectOffset.x * viewToBitmapRatio;
-            //scaledOffset.y = selectOffset.y * viewToBitmapRatio;
 
             // order selection start and end
             OrderSelectRect();
 
             // odjac poczatek bitmapy od selectRect
-            selectRect.Left -= bitmapRect.Left;
-            selectRect.Top -= bitmapRect.Top;
-            selectRect.Right -= bitmapRect.Left;
-            selectRect.Bottom -= bitmapRect.Top;
+            //selectRect.Left -= bitmapRect.Left;
+            //selectRect.Top -= bitmapRect.Top;
+            //selectRect.Right -= bitmapRect.Left;
+            //selectRect.Bottom -= bitmapRect.Top;
+            translate = SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top);
+            result = SKMatrix.CreateIdentity();
+            SKMatrix.PreConcat(ref result, translate);
+            selectRect = result.MapRect(selectRect);
 
             SKRect cropRect = SKRect.Empty;
-            cropRect.Left = selectRect.Left * bitmapToViewRatio;
-            cropRect.Top = selectRect.Top * bitmapToViewRatio;
-            cropRect.Right = selectRect.Right * bitmapToViewRatio;
-            cropRect.Bottom = selectRect.Bottom * bitmapToViewRatio;
+            //cropRect.Left = selectRect.Left * bitmapToViewRatio;
+            //cropRect.Top = selectRect.Top * bitmapToViewRatio;
+            //cropRect.Right = selectRect.Right * bitmapToViewRatio;
+            //cropRect.Bottom = selectRect.Bottom * bitmapToViewRatio;
+            scale = SKMatrix.CreateScale(bitmapToViewRatio, bitmapToViewRatio);
+            result = SKMatrix.CreateIdentity();
+            SKMatrix.PreConcat(ref result, scale);
+            cropRect = result.MapRect(selectRect);
 
             SKRect dest = new SKRect(0, 0, cropRect.Width, cropRect.Height);
 
@@ -796,12 +937,10 @@
             }
 
             //lastBitmaps.Add(sKBitmap);
-            sKBitmap = croppedBitmap;
-            AddBitmap(sKBitmap);
+            //sKBitmap = croppedBitmap;
+            AddBitmap(croppedBitmap);
 
-            //scrollScale = 1;
             selectRect = SKRect.Empty;
-
             ResetPanOffset();
 
             skiaView.Invalidate();
@@ -847,49 +986,53 @@
 
     private void OnMouseDown(MouseEventArgs e)
     {
-        //Console.WriteLine($"{e.Button}");
-        // middle mouse button
+        // middle mouse button - pan
         if (e.Button == 1 && !tilting)
         {
             isMiddle = true;
             panRect.Left = (float)e.OffsetX;
             panRect.Top = (float)e.OffsetY;
-        }
-        else if(e.Button == 0)
+        } // left mouse button - select
+        else if(e.Button == 0) 
         {
             clickTime.Start();
-            //Console.WriteLine("timer start");
             isDown = true;
-            (float scaledOffsetX, float scaledOffsetY) = ScaleOffsets((float)e.OffsetX, (float)e.OffsetY);
-            //Console.WriteLine($"OnMouseDown: scaledOffsetX: {scaledOffsetX}, scaledOffsetY: {scaledOffsetY}");
+            (float scaledCoordX, float scaledCoordY) = ScaleCoordinates((float)e.OffsetX, (float)e.OffsetY);
             distance = Distance(selectRect.Right, selectRect.Bottom,
-                                scaledOffsetX, scaledOffsetY);
+                                scaledCoordX, scaledCoordY);
             if (distance > selectCornerRadius)
             {
+                // cursor NOT on selectRect(Right, Bottom)
                 distance = Distance(selectRect.Left, selectRect.Top,
-                                    scaledOffsetX, scaledOffsetY);
+                                    scaledCoordX, scaledCoordY);
                 if (distance > selectCornerRadius)
                 {
-                    SetSelectionStart(scaledOffsetX, scaledOffsetY);
+                    // cursor NOT on selectRect(Left, Top)
+                    // set selection START - selectRect(Left, Top)
+                    SetSelectionStart(scaledCoordX, scaledCoordY);
                     SetSelectionOffset();
                 }
                 else
                 {
+                    // cursor on selectRect(Left, Top)
+                    // swap selectRect(Left, Top) with selectRect(Right, Bottom) -> OnMouseMove
                     ReverseSelection();
                     SetSelectionOffset();
                 }
             }
+            // else cursor on selectRect(Right, Bottom) -> OnMouseMove
         }
     }
 
     private void OnMouseMove(MouseEventArgs e)
     {
-        (float scaledOffsetX, float scaledOffsetY) = ScaleOffsets((float)e.OffsetX, (float)e.OffsetY);
+        (float scaledCoordX, float scaledCoordY) = ScaleCoordinates((float)e.OffsetX, (float)e.OffsetY);
         if (isDown)
         {
-            SetSelectionEnd(scaledOffsetX, scaledOffsetY);
-            //Console.WriteLine($"OnMouseMove: scaledOffsetX: {scaledOffsetX}, scaledOffsetY: {scaledOffsetY}");
+            // set selection end - selectRect(Right, Bottom)
+            SetSelectionEnd(scaledCoordX, scaledCoordY);
             SetSelectOriginal();
+            //Console.WriteLine($"OnMouseMove: scaledCoordX: {scaledCoordX}, scaledCoordY: {scaledCoordY}");
             skiaView.Invalidate();
         }
 
@@ -936,7 +1079,7 @@
         return (float)Math.Sqrt(Math.Pow(x1-x2, 2) + Math.Pow(y1-y2, 2));
     }
 
-    private (float scaledOffsetX, float scaledOffsetY) ScaleOffsets(float eOffsetX, float eOffsetY)
+    private (float scaledOffsetX, float scaledOffsetY) ScaleCoordinates(float eOffsetX, float eOffsetY)
     {
         return ((float)eOffsetX * windowDPR, (float)eOffsetY * windowDPR);
     }
@@ -950,6 +1093,13 @@
         selectRect.Right = left;
         selectRect.Top = selectRect.Bottom;
         selectRect.Bottom = top;
+        // seemed to work without se1, except for: create sR > edit sr(L,T) > zoom in/out
+        //s1
+        //selectRectOriginal.Left = selectRectOriginal.Right;
+        //selectRectOriginal.Right = left;
+        //selectRectOriginal.Top = selectRectOriginal.Bottom;
+        //selectRectOriginal.Bottom = top;
+        //e1
     }
 
     private void SetSelectionOffset()
@@ -957,21 +1107,44 @@
         selectOffset.x = selectRect.Left - bitmapRect.Left;
         selectOffset.y = selectRect.Top - bitmapRect.Top;
         //Console.WriteLine($"b:({bitmapRect.Left}, {bitmapRect.Top})\n"+
-                                //$"s:({selectRect.Left}, {selectRect.Top})\n"+ 
-                                //$"o: ({selectOffset.x}, {selectOffset.y}))");
+        //$"s:({selectRect.Left}, {selectRect.Top})\n"+ 
+        //$"o: ({selectOffset.x}, {selectOffset.y}))");
     }
 
+    private void ModifySelectStart(SKPoint S)
+    {
+        SKPoint d = S - new SKPoint(selectRect.Right, selectRect.Bottom);
+        SKPoint point = S + d;
+        selectRect.Left = point.X;
+        selectRect.Top = point.Y;
+    }
+
+    private SKRect MakeSelectSymmetric(SKPoint S, SKPoint start)
+    {
+        SKPoint d = S - start;
+        SKPoint end = S + d;
+        return new SKRect(start.X, start.Y, end.X, end.Y);
+    }
+
+    private bool IsPointOnALine(SKPoint A, SKPoint B, SKPoint P)
+    {
+        float eps = 0.01f;
+        float AP = SKPoint.Distance(A,P);
+        float PB = SKPoint.Distance(P,B);
+        float AB = SKPoint.Distance(A,B);
+
+        //Console.WriteLine($"IsPointOnALine: {AB}, {AP + PB}, {AB == AP + PB}");
+        //Console.WriteLine($"IsPointOnALine: {AB}, {AP + PB}, {Math.Abs(AB - (AP + PB)) < eps}");
+        //return AB == AP + PB;
+        return Math.Abs(AB - (AP + PB)) < eps;
+    }
+
+    // SetSelectionStart3 + works
     private void SetSelectionStart(double offsetX, double offsetY)
     {
         if(tilting)
         {
-            if(PointInRectangle(new SKPoint((float)offsetX, (float)offsetY), tiltedBitmapCorners))
-            {
-                selectRect.Left = (float)offsetX;
-                selectRect.Top = (float)offsetY;
-                Console.WriteLine("PointInRectangle: true");
-            }
-            else{Console.WriteLine("PointInRectangle: false");}
+            SetSelectionEnd(offsetX, offsetY);
         }
         else
         {
@@ -983,19 +1156,184 @@
         }
     }
 
+    // SetSelectionEnd3 + works latest 2
+    private void SetSelectionEnd3(double offsetX, double offsetY)
+    {
+        if (tilting)
+        {
+            SKRect newSelect = MakeSelectSymmetric(new SKPoint(infoMiddleX, infoMiddleY),
+                                                   new SKPoint((float)offsetX, (float)offsetY));
+            if (newSelect != SKRect.Empty 
+                && PointInRectangle(new SKPoint(newSelect.Left, newSelect.Top), tiltedBitmapCorners)
+                && PointInRectangle(new SKPoint(newSelect.Left, newSelect.Bottom), tiltedBitmapCorners)
+                && PointInRectangle(new SKPoint(newSelect.Right, newSelect.Top), tiltedBitmapCorners))
+            {
+                selectRect = newSelect;
+                SetSelectionOffset();
+                //Console.WriteLine("PointInRectangle End: true");
+            }
+            //else { Console.WriteLine("PointInRectangle End: false"); }
+        }
+        else
+        {
+            selectRect.Right = (float)Math.Min(bitmapRect.Right, offsetX);
+            selectRect.Bottom = (float)Math.Min(bitmapRect.Bottom, offsetY);
+
+            selectRect.Right = (float)Math.Max(bitmapRect.Left, selectRect.Right);
+            selectRect.Bottom = (float)Math.Max(bitmapRect.Top, selectRect.Bottom);
+        }
+    }
+
+    private SKPoint CalcSelectRect(float offsetX, float offsetY)
+    {
+        SKPoint result = new SKPoint();
+        P = new SKPoint[] { };
+
+        SKPoint A = new SKPoint(offsetX, offsetY);
+        SKPoint S = new SKPoint(infoMiddleX, infoMiddleY);
+
+        float b = A.Y - A.X * (A.Y - S.Y) / (A.X - S.X);
+        SKPoint B = new SKPoint(0, b);
+        //SKPoint B2 = new SKPoint(2 * S.X, 0);
+        SKPoint B2 = new SKPoint(2 * S.X, b);
+
+        //SKPath BSB2 = new SKPath();
+        BSB2 = new SKPath();
+        BSB2.MoveTo(B);
+        BSB2.LineTo(S);
+        BSB2.LineTo(B2);
+
+        //SKPath tiltedBPath = new SKPath();
+        tiltedBPath = new SKPath();
+        tiltedBPath.MoveTo(tiltedBitmapCorners[0]);
+        tiltedBPath.LineTo(tiltedBitmapCorners[1]);
+        tiltedBPath.LineTo(tiltedBitmapCorners[2]);
+        tiltedBPath.LineTo(tiltedBitmapCorners[3]);
+        //tiltedBPath.LineTo(tiltedBitmapCorners[0]);
+        tiltedBPath.Close();
+
+        //SKPath intersection = BSB2.Op(tiltedBPath, SKPathOp.Intersect);
+        SKPath intersection = tiltedBPath.Op(BSB2, SKPathOp.Intersect);
+        if(intersection != null)
+            P = intersection.Points;
+
+        //s3
+        var pList = new List<(float dist, int index)>();
+        if (P != null)
+        {
+            int i = 0;
+            foreach (var point in P)
+            {
+                // if point is between BS or B2S add to pList
+                if (IsPointOnALine(S, B, point) || IsPointOnALine(S, B2, point))
+                {
+                    float d = SKPoint.Distance(S, point);
+                    if(d != 0)
+                        pList.Add((d, i)); 
+                }
+                i++;
+            }
+            //pList.Sort();
+
+            if(pList.Count > 0)
+                result = P[pList.Min().index];
+        }
+        //e3
+        return result;
+    }
+
+    // SetSelectionEnd4 + works latest 3
     private void SetSelectionEnd(double offsetX, double offsetY)
     {
         if (tilting)
         {
-            if (selectRect != SKRect.Empty && PointInRectangle(new SKPoint((float)offsetX, (float)offsetY), tiltedBitmapCorners)
+            SKPoint start = CalcSelectRect((float)offsetX, (float)offsetY);
+            SKRect newSelect = MakeSelectSymmetric(new SKPoint(infoMiddleX, infoMiddleY), start);
+            if (newSelect != SKRect.Empty)
+            {
+                selectRect = newSelect;
+                OrderSelectRect();
+                SetSelectionOffset();
+                //Console.WriteLine("PointInRectangle End: true");
+            }
+            //else { Console.WriteLine("PointInRectangle End: false"); }
+        }
+        else
+        {
+            selectRect.Right = (float)Math.Min(bitmapRect.Right, offsetX);
+            selectRect.Bottom = (float)Math.Min(bitmapRect.Bottom, offsetY);
+
+            selectRect.Right = (float)Math.Max(bitmapRect.Left, selectRect.Right);
+            selectRect.Bottom = (float)Math.Max(bitmapRect.Top, selectRect.Bottom);
+        }
+    }
+
+    // latest 1
+    private void SetSelectionStart1(double offsetX, double offsetY)
+    {
+        if(tilting)
+        {
+            if(PointInRectangle(new SKPoint((float)offsetX, (float)offsetY), tiltedBitmapCorners))
+            {
+                selectRect.Left = (float)offsetX;
+                selectRect.Top = (float)offsetY;
+                //Console.WriteLine("PointInRectangle Start: true");
+            }
+            //else{Console.WriteLine("PointInRectangle Start: false");}
+        }
+        else
+        {
+            selectRect.Left = (float)Math.Max(bitmapRect.Left, offsetX);
+            selectRect.Top = (float)Math.Max(bitmapRect.Top, offsetY);
+
+            selectRect.Left = (float)Math.Min(bitmapRect.Right, selectRect.Left);
+            selectRect.Top = (float)Math.Min(bitmapRect.Bottom, selectRect.Top);
+        }
+    }
+
+    // original
+    private void SetSelectionEnd2(double offsetX, double offsetY)
+    {
+        if (tilting)
+        {
+            if (selectRect != SKRect.Empty 
+                && PointInRectangle(new SKPoint((float)offsetX, (float)offsetY), tiltedBitmapCorners)
                 && PointInRectangle(new SKPoint(selectRect.Left, (float)offsetY), tiltedBitmapCorners)
                 && PointInRectangle(new SKPoint((float)offsetX, selectRect.Top), tiltedBitmapCorners))
             {
                 selectRect.Right = (float)offsetX;
                 selectRect.Bottom = (float)offsetY;
-                Console.WriteLine("PointInRectangle: true");
+                //Console.WriteLine("PointInRectangle: true");
             }
-            else { Console.WriteLine("PointInRectangle: false"); }
+            //else { Console.WriteLine("PointInRectangle: false"); }
+        }
+        else
+        {
+            selectRect.Right = (float)Math.Min(bitmapRect.Right, offsetX);
+            selectRect.Bottom = (float)Math.Min(bitmapRect.Bottom, offsetY);
+
+            selectRect.Right = (float)Math.Max(bitmapRect.Left, selectRect.Right);
+            selectRect.Bottom = (float)Math.Max(bitmapRect.Top, selectRect.Bottom);
+        }
+    }
+
+    // original + latest
+    private void SetSelectionEnd1(double offsetX, double offsetY)
+    {
+        if (tilting)
+        {
+            if (selectRect != SKRect.Empty 
+                && PointInRectangle(new SKPoint((float)offsetX, (float)offsetY), tiltedBitmapCorners)
+                && PointInRectangle(new SKPoint(selectRect.Left, (float)offsetY), tiltedBitmapCorners)
+                && PointInRectangle(new SKPoint((float)offsetX, selectRect.Top), tiltedBitmapCorners))
+            {
+                selectRect.Right = (float)offsetX;
+                selectRect.Bottom = (float)offsetY;
+                ModifySelectStart(new SKPoint(infoMiddleX, infoMiddleY));
+                SetSelectionOffset();
+                //Console.WriteLine("PointInRectangle End: true");
+            }
+            //else { Console.WriteLine("PointInRectangle End: false"); }
         }
         else
         {
@@ -1058,8 +1396,8 @@
             var imageData = await IDbManager.FetchImageData(ImageName);
             if(imageData != null)
             {
-                sKBitmap = SKBitmap.Decode(imageData.ImageArray);
-                AddBitmap(sKBitmap);
+                //sKBitmap = SKBitmap.Decode(imageData.ImageArray);
+                AddBitmap(SKBitmap.Decode(imageData.ImageArray));
 
                 //int w = 1000;
                 //CanvasAttributes = new Dictionary<string, object> 
@@ -1156,5 +1494,33 @@
 
     //        StateHasChanged();
     //}
+
+    //s1
+    //if (BSB2 != null && tiltedBPath != null)
+    //{
+    //    SKPaint pathPaint = new SKPaint
+    //        {
+    //            Style = SKPaintStyle.Stroke,
+    //            StrokeWidth = 3,
+    //            PathEffect = SKPathEffect.CreateDash(new float[] { 4, 4 }, 0),
+    //            Color = SKColors.Red
+    //        };
+    //    canvas.DrawPath(BSB2, pathPaint);
+    //    canvas.DrawPath(tiltedBPath, pathPaint);
+
+    //    SKPaint circlePaint2 = new SKPaint()
+    //    {
+    //        Style = SKPaintStyle.Fill,
+    //        IsAntialias = true,
+    //        Color = SKColors.Violet
+    //    };
+    //    int circleRadius = 10;
+    //    foreach (var point in P)
+    //    {
+    //        canvas.DrawCircle(point, circleRadius, circlePaint2);
+    //        Console.WriteLine($"intersect: ({point.X}, {point.Y})");
+    //    }
+    //}
+    //e1
 
 }
