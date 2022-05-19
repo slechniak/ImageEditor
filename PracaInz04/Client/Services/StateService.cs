@@ -3,16 +3,15 @@ using System.IO;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Forms;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 namespace PracaInz04.Client.Services
 {
     public class StateService
     {
         public byte[] ImageArray { get; set; }
-
         public string ImageName { get; set; }
+        public SKBitmap bitmap { get; set; }
 
         // old
         public int Count { get; set; }
@@ -22,7 +21,7 @@ namespace PracaInz04.Client.Services
         public Stream imageStream { get; set; }
         public byte[] imageArray { get; set; }
         public string imgUrl { get; set; } = string.Empty;
-        public Image imageResult { get; set; }
+        //public Image imageResult { get; set; }
 
         public ILocalStorageService localStorage;
 

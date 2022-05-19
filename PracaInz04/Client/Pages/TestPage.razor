@@ -75,13 +75,18 @@
                 value="@tiltAngle"  @onchange="OnTiltAngleChange"
                 type="number" class="form-control m-2 w-25" id="formControlInput1">
             <button class="btn btn-primary m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
+            <button class="btn btn-primary m-2 w-50" @onclick="ModalShowDownloadComponent">Download</button>
+            <button class="btn btn-primary m-2 w-50" @onclick="SaveImage">Save image</button>
 		</div>
 	</div>
 </div>
 
 @code {
+    [CascadingParameter] public IModalService Modal { get; set; }
     // initialize imageName in local storage on startup
     public string? ImageName { get; set; }
+    //public ImageResized imageResized { get; set; }
+    public ImageData imageData { get; set; }
     public ImageResized imageResized { get; set; }
     public SKBitmap sKBitmap { get; set; }
 
@@ -115,14 +120,49 @@
     SKPoint[] tiltedBitmapCorners;
     SKRect tiltedBitmapRect;
     bool makeSelectRect = false;
-    int minAngle = -90;
-    int maxAngle = 90;
+    int minAngle = -45;
+    int maxAngle = 45;
     float infoMiddleX, infoMiddleY;
     SKPath BSB2, tiltedBPath;
     SKPoint[] P = { };
+    SKPoint cursor;
 
     private Dictionary<string, object> CanvasAttributes { get; set; }
     //new(){{ "width", "500" },{ "height", "500" }};
+
+    private byte[] SKBitmapToArray()
+    {
+        var skData = sKBitmap.Encode(SKEncodedImageFormat.Png, 100);
+        var bitmapArray = skData.ToArray();
+        return bitmapArray;
+    }
+
+    private async Task SaveImage()
+    {
+        if(ImageName != null)
+        {
+            //ImageData imgData = IDbManager.CreateImageData(
+            //                    SKBitmapToArray(),
+            //                    imageData.ImageName,
+            //                    imageData.ImageType,
+            //                    (int)imageData.ImageId);
+
+            imageData.ImageArray = SKBitmapToArray();
+            var result = await IndexedDbContext.UpdateItems<ImageData>(
+                                new List<ImageData>() { imageData });
+
+            imageResized.ImageArray = ImageProc.ResizeSkia(SKBitmapToArray());
+            var result2 = await IndexedDbContext.UpdateItems<ImageResized>(
+                                new List<ImageResized>() { imageResized });
+            Console.WriteLine("SaveImage ended");
+        }
+    }
+
+    private void ModalShowDownloadComponent()
+    {
+        SService.bitmap = sKBitmap;
+        Modal.Show<DownloadComponent>("Download image");
+    }
 
     private void SetUpNewSelectRect()
     {
@@ -140,7 +180,6 @@
         else
             TiltImage();
         //Console.WriteLine(e.Value);
-
     }
 
     private void DisplayPoint(SKPoint p)
@@ -262,7 +301,7 @@
         //}
         scrollScaleChanged = false;
 
-        // tilting - rotate bitmap and draw level lines
+        // tilting - rotate bitmap
         //if(tiltAngle != 0)
         if(tilting)
         {
@@ -270,15 +309,6 @@
             canvas.DrawBitmap(sKBitmap, bitmapRect, new SKPaint() { IsAntialias = true });
             canvas.RotateDegrees(-tiltAngle, infoMiddleX, infoMiddleY);
             //tiltAngle = 0;
-
-            SKPaint directionPaint = new SKPaint()
-            {
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1,
-                Color = SKColors.White
-            };
-            canvas.DrawLine(0, infoMiddleY, info.Width, infoMiddleY, directionPaint);
-            canvas.DrawLine(infoMiddleX, 0, infoMiddleX, info.Height, directionPaint);
         }
         else
         {
@@ -321,6 +351,7 @@
         {
             if(!isDown)
                 AdjustSelection();
+
             //Console.WriteLine($"{selectRect.Left}, {selectRect.Top}");
 
             SKColor selectionColor = SKColors.White;
@@ -333,13 +364,6 @@
             };
             canvas.DrawRect(selectRect, paint);
 
-            SKPaint circlePaint = new SKPaint()
-            {
-                Style = SKPaintStyle.Fill,
-                IsAntialias = true,
-                Color = selectionColor
-            };
-
             // add selectRect to unselected (path)
             unselected.AddRect(selectRect);
             unselected.FillType = SKPathFillType.EvenOdd;
@@ -347,10 +371,34 @@
             {
                 Style = SKPaintStyle.Fill,
                 Color = SKColors.Black.WithAlpha((byte)(0.5 * 255)),
-
             };
             canvas.DrawPath(unselected, unselectedPaint);
 
+            //s1 draw line form click to middle S and draw level lines
+            if(tilting)
+            {
+                SKPaint directionPaint = new SKPaint()
+                {
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 1,
+                    Color = SKColors.White
+                };
+                canvas.DrawLine(0, infoMiddleY, info.Width, infoMiddleY, directionPaint);
+                canvas.DrawLine(infoMiddleX, 0, infoMiddleX, info.Height, directionPaint);
+                //if (isDown)
+                //{
+                //    crossPaint.IsAntialias = true;
+                //    canvas.DrawLine(cursor.X, cursor.Y, infoMiddleX, infoMiddleY, crossPaint); 
+                //}
+            }
+            //e1
+
+            SKPaint circlePaint = new SKPaint()
+            {
+                Style = SKPaintStyle.Fill,
+                IsAntialias = true,
+                Color = selectionColor
+            };
             // draw corners of selectRect
             canvas.DrawCircle(selectRect.Left, selectRect.Top, selectCornerRadius, circlePaint);
             canvas.DrawCircle(selectRect.Right, selectRect.Bottom, selectCornerRadius, circlePaint);
@@ -840,6 +888,10 @@
                 skiaView.Invalidate();
             }
         }
+        if(eCode =="KeyS")
+        {
+            SaveImage();
+        }
     }
 
     private void AddBitmap(SKBitmap bitmap)
@@ -884,7 +936,8 @@
         }
     }
 
-    private void CropImage()
+    // original + works
+    private void CropImage1()
     {
         if (selectRect != SKRect.Empty)
         {
@@ -943,6 +996,75 @@
             selectRect = SKRect.Empty;
             ResetPanOffset();
 
+            skiaView.Invalidate();
+        }
+        else
+            Console.WriteLine("No selection error message");
+    }
+
+    // using skmatrix transform + works + tilt cropping works
+    private void CropImage()
+    {
+        if (selectRect != SKRect.Empty)
+        {
+            SKMatrix scale, translate, result;
+            float bitmapToViewRatio = (float)sKBitmap.Width / bitmapRect.Width;
+
+            // order selection start and end
+            OrderSelectRect();
+
+            // odjac poczatek bitmapy od selectRect
+            translate = SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top);
+            // przeskalowac selectRect o bitmapToViewRatio
+            scale = SKMatrix.CreateScale(bitmapToViewRatio, bitmapToViewRatio);
+
+            SKRect cropRect = SKRect.Empty;
+            result = SKMatrix.CreateIdentity();
+            SKMatrix.PreConcat(ref result, scale);
+            SKMatrix.PreConcat(ref result, translate);
+            cropRect = result.MapRect(selectRect);
+
+            float movX = -new List<float>() { cropRect.Left, cropRect.Right, 0 }.Min();
+            float movY = -new List<float>() { cropRect.Top, cropRect.Bottom, 0 }.Min();
+            result = SKMatrix.CreateIdentity();
+            translate = SKMatrix.CreateTranslation(movX, movY);
+            SKMatrix.PreConcat(ref result, translate);
+            cropRect = result.MapRect(cropRect);
+
+            //Console.WriteLine($"cR: ({cropRect.Left}, {cropRect.Top}), ({cropRect.Right}, {cropRect.Bottom})");
+            //Console.WriteLine($"movX: {movX}, movY: {movY}");
+
+            SKRect dest = new SKRect(0, 0, cropRect.Width, cropRect.Height);
+            SKBitmap croppedBitmap = new SKBitmap((int)cropRect.Width, (int)cropRect.Height);
+
+            using (SKCanvas canvas = new SKCanvas(croppedBitmap))
+            {
+                if(tilting)
+                {
+                    // revise size
+                    int rBSize = 2 * Math.Max(sKBitmap.Width, sKBitmap.Height);
+                    SKBitmap rotatedSKBitmap = new SKBitmap(rBSize, rBSize);
+                    using (SKCanvas canvas2 = new SKCanvas(rotatedSKBitmap)) 
+                    {
+                        canvas2.Translate(movX, movY);
+                        canvas2.RotateDegrees(tiltAngle, sKBitmap.Width/2, sKBitmap.Height/2);
+                        canvas2.DrawBitmap(sKBitmap, new SKPoint(0,0));
+                        canvas2.RotateDegrees(-tiltAngle, sKBitmap.Width/2, sKBitmap.Height/2);
+                    }
+                    canvas.DrawBitmap(rotatedSKBitmap, cropRect, dest);
+                    rotatedSKBitmap.Dispose();
+                }
+                else
+                    canvas.DrawBitmap(sKBitmap, cropRect, dest);
+            }
+
+            AddBitmap(croppedBitmap);
+            selectRect = SKRect.Empty;
+            ResetPanOffset();
+            if (scrollScale > 1)
+                ResetScale();
+            if(tilting)
+                ResetTilt();
             skiaView.Invalidate();
         }
         else
@@ -1030,6 +1152,7 @@
         if (isDown)
         {
             // set selection end - selectRect(Right, Bottom)
+            cursor = new SKPoint(scaledCoordX, scaledCoordY);
             SetSelectionEnd(scaledCoordX, scaledCoordY);
             SetSelectOriginal();
             //Console.WriteLine($"OnMouseMove: scaledCoordX: {scaledCoordX}, scaledCoordY: {scaledCoordY}");
@@ -1048,6 +1171,8 @@
     {
         isDown = false;
         isMiddle = false;
+        //if (tilting)
+        //    skiaView.Invalidate();
         //Console.WriteLine($"OnMouseUp: e.OffsetX: {e.OffsetX * windowDPR}, e.OffsetY: {e.OffsetY * windowDPR}");
     }
 
@@ -1393,7 +1518,8 @@
                 //testSrc = await ImageProc.GetImageURL(imageResized.ImageArray);
             }
 
-            var imageData = await IDbManager.FetchImageData(ImageName);
+            // get original image
+            imageData = await IDbManager.FetchImageData(ImageName);
             if(imageData != null)
             {
                 //sKBitmap = SKBitmap.Decode(imageData.ImageArray);
@@ -1408,7 +1534,7 @@
                 //{{ "width", $"{sKBitmap.Width}" },
                 //{ "height", $"{sKBitmap.Height}" }};
 
-                testSrc2 = await ImageProc.GetImageURL(imageData.ImageArray);
+                //testSrc2 = await ImageProc.GetImageURL(imageData.ImageArray);
             }
         }
 
@@ -1423,104 +1549,5 @@
             await JS.InvokeVoidAsync("attachHandlers");
         }
     }
-
-    //private void OnMouseWheel(WheelEventArgs e)
-    //{
-    //    // scroll up / zoom in
-    //    //if(e.DeltaY > 0)
-    //    //{
-    //    //    if (scrollScale < 10)
-    //    //    {
-    //    //        if (scrollScale < 1)
-    //    //            scrollScale = (float)Math.Round(scrollScale + 0.1f, 1);
-    //    //        else
-    //    //            scrollScale = (float)Math.Round(scrollScale + 1, 0);
-    //    //    }
-    //    //}
-    //    //else
-    //    //{
-    //    //    if (scrollScale > 0.2)
-    //    //    {
-    //    //        if (scrollScale <= 1)
-    //    //            scrollScale = (float)Math.Round(scrollScale - 0.1f, 1);
-    //    //        else
-    //    //            scrollScale = (float)Math.Round(scrollScale - 1, 0);
-    //    //    }
-    //    //}
-
-    //    if(e.DeltaY > 0)
-    //    {
-    //        if (scrollScale < 2)
-    //        {
-    //            scrollScale = (float)Math.Round(scrollScale + 0.1f, 1);
-    //        }
-    //    }
-    //    else
-    //    {
-    //        if (scrollScale > 0.2)
-    //        {
-    //            scrollScale = (float)Math.Round(scrollScale - 0.1f, 1);
-    //        }
-    //    }
-    //    Console.WriteLine($"{e.DeltaY}, {scrollScale}");
-    //    skiaView.Invalidate();
-    //}
-
-    //public async Task<string> TestStuff()
-    //{
-    //    var testImage = await IDbManager.FetchImageResized(ImageName);
-    //    var imageSrc = await ImageProc.GetImageURL(testImage.ImageArray);
-
-    //    return imageSrc;
-    //}
-
-    //private Canvas2DContext _context;
-    //protected BECanvasComponent _canvasReference;
-    //protected ElementReference imgReference;
-
-    //public async Task SetupBECanvas()
-    //{
-    //    if(_canvasReference != null)
-    //        _context = await _canvasReference.CreateCanvas2DAsync();
-    //    //await this._context.SetFillStyleAsync("green");
-
-    //    //await this._context.FillRectAsync(10, 100, 100, 100);
-
-    //    //await this._context.SetFontAsync("48px serif");
-    //    //await this._context.StrokeTextAsync("Hello Blazor!!!", 10, 100);
-
-    //    if(_context != null)
-    //        await _context.DrawImageAsync(imgReference,0,0);
-
-    //        StateHasChanged();
-    //}
-
-    //s1
-    //if (BSB2 != null && tiltedBPath != null)
-    //{
-    //    SKPaint pathPaint = new SKPaint
-    //        {
-    //            Style = SKPaintStyle.Stroke,
-    //            StrokeWidth = 3,
-    //            PathEffect = SKPathEffect.CreateDash(new float[] { 4, 4 }, 0),
-    //            Color = SKColors.Red
-    //        };
-    //    canvas.DrawPath(BSB2, pathPaint);
-    //    canvas.DrawPath(tiltedBPath, pathPaint);
-
-    //    SKPaint circlePaint2 = new SKPaint()
-    //    {
-    //        Style = SKPaintStyle.Fill,
-    //        IsAntialias = true,
-    //        Color = SKColors.Violet
-    //    };
-    //    int circleRadius = 10;
-    //    foreach (var point in P)
-    //    {
-    //        canvas.DrawCircle(point, circleRadius, circlePaint2);
-    //        Console.WriteLine($"intersect: ({point.X}, {point.Y})");
-    //    }
-    //}
-    //e1
 
 }

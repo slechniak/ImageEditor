@@ -8,6 +8,7 @@ using static PracaInz04.Client.IndexedDbClasses.IndexedDBModels;
 using PracaInz04.Client.IndexedDbClasses;
 using PracaInz04.Client.ImageProcessingClasses;
 using PracaInz04.Client.LocalStorageClasses;
+using Blazored.Modal;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -25,6 +26,7 @@ builder.Services.AddIndexedDbDatabase<IndexedDbContext>(options =>
 builder.Services.AddScoped<IndexedDbManager>();
 builder.Services.AddScoped<ImageProcessing>();
 builder.Services.AddScoped<LocalStorageManager>();
+builder.Services.AddBlazoredModal();
 
 // load data from local storage - old
 //var host = builder.Build();

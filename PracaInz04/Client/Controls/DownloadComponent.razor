@@ -1,0 +1,81 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.IO
+@inject IJSRuntime JS
+@inject StateService SService
+
+<EditForm Model="@filename" OnValidSubmit="@DownloadImage">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="input-group mb-4">
+      <span class="input-group-text">File name:</span>
+      <input @bind="filename.Name" type="text" class="form-control w-25" aria-label="Text input with dropdown button">
+      <select @bind="filename.Format" class="form-select" aria-label="Default select example">
+          @*@foreach(var format in formats)*@
+          @foreach(var format in formats.Keys.ToList<string>())
+            {
+                <option value=@format>@format</option>
+            }
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Download</button>
+    <button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>
+</EditForm>
+
+@code {
+    public class FileName
+    {
+        [Required]
+        [StringLength(20, ErrorMessage = "Name must be less than 20 characters")]
+        public string Name { get; set; } = "untitled";
+        public string Format { get; set; } = formats.Keys.ToList<string>()[0];
+
+        public string GetFileName()
+        {
+            return $"{Name}.{Format}";
+        }
+    }
+
+    [CascadingParameter] 
+    BlazoredModalInstance ModalInstance { get; set; }
+    private FileName filename = new();
+    public static Dictionary<string, SKEncodedImageFormat> formats = new()
+    {
+        { "png", SKEncodedImageFormat.Png},
+        { "jpg", SKEncodedImageFormat.Jpeg},
+        { "gif", SKEncodedImageFormat.Gif},
+        { "bmp", SKEncodedImageFormat.Bmp}
+    };
+
+    private async Task DownloadImage()
+    {
+        Console.WriteLine($"{filename.Name}.{filename.Format}");
+        await DownloadFileFromStream();
+        ModalInstance.CancelAsync();
+    }
+
+    private byte[] SKBitmapToArray()
+    {
+        var skData = SService.bitmap.Encode(formats[filename.Format], 100);
+        var bitmapArray = skData.ToArray();
+        return bitmapArray;
+    }
+
+    private async Task DownloadFileFromStream()
+    {
+        var fileStream = GetFileStream();
+        var fileName = filename.GetFileName();
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private Stream GetFileStream()
+    {
+        var bitmapArray = SKBitmapToArray();
+        var fileStream = new MemoryStream(bitmapArray);
+
+        return fileStream;
+    }
+}

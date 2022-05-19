@@ -84,6 +84,30 @@
         await base.OnInitializedAsync();
     }
 
+    public async Task SetResizedImages()
+    {
+        resizedImages = await IndexedDbContext.GetAll<ImageResized>();
+        Console.WriteLine("SetResizedImages ended");
+    }
+
+    public async Task SetImageInfos()
+    {
+        imageInfos = new List<(string, string)>();
+        foreach(var image in resizedImages)
+        {
+            string src = await ImageProc.GetImageURL(image.ImageArray);
+            imageInfos.Add((src, image.ImageName));
+        }
+        Console.WriteLine("SetImageInfos ended");
+    }
+
+    public async Task LoadThumbnails()
+    {
+        await SetResizedImages();
+        //await SetThumbnails();
+        await SetImageInfos();  
+    }
+
     // code from idbtest
 
     // before UploadImageComponent (onfileupload and gotoeditor)
@@ -125,30 +149,6 @@
     //    //NavigationManager.NavigateTo($"editor/{imageName}");
     //    NavigationManager.NavigateTo($"editor");
     //}
-
-    public async Task SetResizedImages()
-    {
-        resizedImages = await IndexedDbContext.GetAll<ImageResized>();
-        Console.WriteLine("SetResizedImages ended");
-    }
-
-    public async Task SetImageInfos()
-    {
-        imageInfos = new List<(string, string)>();
-        foreach(var image in resizedImages)
-        {
-            string src = await ImageProc.GetImageURL(image.ImageArray);
-            imageInfos.Add((src, image.ImageName));
-        }
-        Console.WriteLine("SetImageInfos ended");
-    }
-
-    public async Task LoadThumbnails()
-    {
-        await SetResizedImages();
-        //await SetThumbnails();
-        await SetImageInfos();  
-    }
 
     //public async Task SetThumbnails()
     //{
