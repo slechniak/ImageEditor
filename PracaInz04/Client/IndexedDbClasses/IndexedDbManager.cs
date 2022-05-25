@@ -1,4 +1,5 @@
 ﻿using PracaInz04.Client.ImageProcessingClasses;
+using SkiaSharp;
 using static PracaInz04.Client.IndexedDbClasses.IndexedDBModels;
 
 namespace PracaInz04.Client.IndexedDbClasses
@@ -19,6 +20,7 @@ namespace PracaInz04.Client.IndexedDbClasses
         {
             int maxKey = await IndexedDbContext.GetMaxKey<int, ImageData>();
             ImageData imageData = CreateImageData(imageArray, imageName, imageType, maxKey + 1);
+            Console.WriteLine($"AddImageDataToIDb ImageArray.Length: {imageData.ImageArray.Length}");
             var addedResult = await IndexedDbContext.AddItems<ImageData>(new List<ImageData> { imageData });
 
             return addedResult;
@@ -40,8 +42,11 @@ namespace PracaInz04.Client.IndexedDbClasses
         // add ImageResized
         public async Task<string> AddImageResizedToIDb(byte[] imageArray, string imageName, string imageType)
         {
-            int maxKey = await IndexedDbContext.GetMaxKey<int, ImageData>();
+            // shouldnt it be ImageResized?
+            //int maxKey = await IndexedDbContext.GetMaxKey<int, ImageData>();
+            int maxKey = await IndexedDbContext.GetMaxKey<int, ImageResized>();
             ImageResized imageResized = CreateImageResized(imageArray, imageName, imageType, maxKey + 1);
+            Console.WriteLine($"AddImageResizedToIDb ImageArray.Length: {imageResized.ImageArray.Length}");
             var addedResult = await IndexedDbContext.AddItems<ImageResized>(new List<ImageResized> { imageResized });
 
             return addedResult;
@@ -54,7 +59,7 @@ namespace PracaInz04.Client.IndexedDbClasses
             {
                 ImageId = maxKey,
                 ImageName = fileName,
-                ImageArray = ImageProc.ResizeSkia(imageArr),
+                ImageArray = ImageProc.ResizeSkiaDefaut(imageArr),
                 ImageType = imageType
             };
             return item;
@@ -77,6 +82,20 @@ namespace PracaInz04.Client.IndexedDbClasses
             var result = await IndexedDbContext.GetByIndex<string, ImageData>(imageName, null, ImageNameIndex, false);
             //var result = await this.GetByIndex<string, ImageResized>(imageName, ImageNameIndex);
             return result.First();
+        }
+
+        public async Task UpdateIDb(SKBitmap sKBitmap, ImageData imageData, ImageResized imageResized)
+        {
+            byte[] sKBitmapArray = ImageProc.SKBitmapToArray(sKBitmap);
+            imageData.ImageArray = sKBitmapArray;
+            var openDbResult = await IndexedDbContext.OpenIndexedDb();
+            var result = await IndexedDbContext.UpdateItems<ImageData>(
+                                new List<ImageData>() { imageData });
+
+            imageResized.ImageArray = ImageProc.ResizeSkiaDefaut(sKBitmap);
+
+            var result2 = await IndexedDbContext.UpdateItems<ImageResized>(
+                                new List<ImageResized>() { imageResized });
         }
     }
 }

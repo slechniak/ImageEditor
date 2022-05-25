@@ -2,7 +2,10 @@
 using System.IO;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
+using Blazored.Modal;
+using Blazored.Modal.Services;
 using Microsoft.AspNetCore.Components.Forms;
+using PracaInz04.Client.Controls;
 using SkiaSharp;
 
 namespace PracaInz04.Client.Services
@@ -35,6 +38,19 @@ namespace PracaInz04.Client.Services
         public void NotifyStateChanged()
         {
             OnChange?.Invoke();
+        }
+
+        public async Task Progress(IModalService Modal, Func<Task> method, string message = "Progress...")
+        {
+            var options = new ModalOptions()
+            {
+                HideCloseButton = true
+            };
+            var formModal = Modal.Show<ProgressComponent>(message, options);
+            await Task.Delay(1);
+            await method();
+            formModal.Close();
+            await Task.Delay(1);
         }
 
         //public async Task GetFromLocalStorage()

@@ -1,0 +1,33 @@
+﻿@inject StateService SService
+@inject LocalStorageManager LSManager
+@inject IndexedDbManager IDbManager
+@inject IndexedDbContext IndexedDbContext
+@inject NavigationManager NavigationManager
+@inject ImageProcessing ImageProc
+
+<div class="d-flex justify-content-center mb-4">
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+@*<button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>*@
+@code {
+	[CascadingParameter] 
+	BlazoredModalInstance ModalInstance { get; set; }
+	//[Parameter]	
+	//public ImageData imageData { get; set; }
+	//[Parameter]	
+	//public ImageResized imageResized { get; set; }
+	//public SKBitmap sKBitmap { get; set; }
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if(firstRender)
+		{
+			//sKBitmap = SService.bitmap;
+			//await IDbManager.UpdateIDb(sKBitmap, imageData, imageResized);
+			//await ModalInstance.CancelAsync();
+			//Console.WriteLine("SaveImage ended");
+		}
+	}
+}

@@ -1,12 +1,16 @@
 ﻿@inject IndexedDbManager IDbManager
 @inject NavigationManager NavigationManager
 @inject LocalStorageManager LSManager
+@inject StateService SService
 
 <label for="formFile" class="form-label fw-bold lead">Upload an image</label>
 <InputFile OnChange="OnFileUpload" class="form-control" id="customFile"/>
 
 @code {
-	public async Task OnFileUpload(InputFileChangeEventArgs e)
+
+    [Parameter]
+    public EventCallback ParentMethod { get; set; }
+    public async Task OnFileUpload(InputFileChangeEventArgs e)
     {
         // get image array, content type, other data
         IBrowserFile imageFile = e.File;
@@ -16,23 +20,16 @@
 
         // add original and data to idb
         var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
-        Console.WriteLine($"data added: {imageFile.Name}");
 
         // add resized to idb
         var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
-        Console.WriteLine($"data added: {imageFile.Name}");
+        
+        //GoToEditor(imageFile.Name);
+        await GoToEditor(imageFile.Name);
 
-        // pass image data to stateService/routing parameters
-        // or trigger an onClick function and pass image data
+        await ParentMethod.InvokeAsync();
 
-        // go to editor
-        //NavigationManager.NavigateTo("editor");
-        GoToEditor(imageFile.Name);
-
-        // load resized images and generate thumbnails
-        //await LoadThumbnails();
-
-        //StateHasChanged();
+        SService.NotifyStateChanged();
     }
 
     public async Task GoToEditor(string imageName)
@@ -42,6 +39,7 @@
         // save imageName to state service
         //SService.ImageName = imageName;
         //NavigationManager.NavigateTo($"editor/{imageName}");
-        NavigationManager.NavigateTo($"editor3");
+        //NavigationManager.NavigateTo($"editor3");
+        NavigationManager.NavigateTo($"testpage");
     }
 }

@@ -70,8 +70,8 @@ namespace PracaInz04.Client.IndexedDbClasses
                 .WithName("TestAttributes")
                 .WithVersion(1);
 
-            indexedDbDatabaseModel.AddStore<ImageDto>();
-            indexedDbDatabaseModel.AddStore<ImageInfo>();
+            //indexedDbDatabaseModel.AddStore<ImageDto>();
+            //indexedDbDatabaseModel.AddStore<ImageInfo>();
 
             indexedDbDatabaseModel.AddStore<ImageResized>();
             indexedDbDatabaseModel.AddStore<ImageData>();

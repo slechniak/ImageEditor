@@ -1,0 +1,94 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.IO
+@inject IJSRuntime JS
+@inject StateService SService
+@inject ImageProcessing ImgProc
+
+<EditForm Model="@size" OnValidSubmit="@ResizeImage">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="input-group mb-4">
+      <span class="input-group-text w-25">Width:</span>
+      <input value="@size.Width" type="number" min="1"
+            class="form-control" aria-label="Text input"
+            @oninput="(e) => HandleInput(e, isWidth: true)">
+    </div>
+
+    <div class="input-group mb-4">
+      <span class="input-group-text w-25">Height:</span>
+      <input value="@size.Height" type="number" min="1"
+            class="form-control" aria-label="Text input"
+            @oninput="(e) => HandleInput(e, isWidth: false)">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Resize</button>
+    <button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>
+</EditForm>
+
+@code {
+    public class Size
+    {
+        public int? Width { get; set; } = 0;
+        public int? Height { get; set; } = 0;
+    }
+
+    [CascadingParameter] 
+    BlazoredModalInstance ModalInstance { get; set; }
+    [Parameter] 
+    public int OriginalWidth { get; set; }
+    [Parameter] 
+    public int OriginalHeight { get; set; }
+    private Size size = new();
+
+    protected override void OnInitialized()
+    {
+        size.Width = OriginalWidth;
+        size.Height = OriginalHeight;
+        base.OnInitialized();
+    }
+
+    private void HandleInput(ChangeEventArgs e, bool isWidth)
+    {
+        //SizeChanged(Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0), null);
+        //SizeChanged(null, Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0));
+        string str = (string)e.Value;
+        int number;
+        if (!Int32.TryParse(str, out number))
+        {
+            //number = 0;
+            size.Width = null;
+            size.Height = null;
+        }
+        else
+        {
+            if (isWidth)
+                SizeChanged(number, null);
+            else
+                SizeChanged(null, number);
+        }
+    }
+
+    private void SizeChanged(int? width, int? height)
+    {
+        SKImageInfo info = ImgProc.GetResizedImageInfo(SService.bitmap, width, height);
+        //size.Width = info.Width == 0 ? null : info.Width;
+        //size.Height = info.Height == 0 ? null : info.Height;
+        size.Width = info.Width;
+        size.Height = info.Height;
+    }
+
+    private async Task ResizeImage()
+    {
+        Console.WriteLine($"w: {size.Width}, h: {size.Height}");
+        if (size.Width > 0 && size.Height > 0)
+        {
+            Console.WriteLine("resize");
+            SService.bitmap = ImgProc.ResizeSKBitmap(SService.bitmap, size.Width, size.Height);
+            ModalInstance.CloseAsync();
+            //await ModalInstance.CancelAsync();
+            //ModalInstance.CloseAsync(ModalResult.Ok(true));
+        }
+    }
+
+}
