@@ -2,7 +2,7 @@
 using SkiaSharp;
 using static PracaInz04.Client.IndexedDbClasses.IndexedDBModels;
 
-namespace PracaInz04.Client.IndexedDbClasses
+namespace PracaInz04.Client.IndexedDbClasses 
 {
     public class IndexedDbManager
     {
@@ -96,6 +96,91 @@ namespace PracaInz04.Client.IndexedDbClasses
 
             var result2 = await IndexedDbContext.UpdateItems<ImageResized>(
                                 new List<ImageResized>() { imageResized });
+        }
+
+        public async Task<int> AddImageToIDb(byte[] imageArray, string imageName)
+        {
+            string CurrentDate = DateTime.Now.ToString();
+            int maxKey = await IndexedDbContext.GetMaxKey<int, ImageOriginal2>();
+            SKBitmap bitmap = SKBitmap.Decode(imageArray);
+            ImageOriginal2 imageOriginal2 = new ImageOriginal2()
+            {
+                Id = maxKey + 1,
+                Array = imageArray,
+                Name = imageName,
+                Width = bitmap.Width,
+                Height = bitmap.Height,
+                Date = CurrentDate
+            };
+            //Console.WriteLine($"Add ImageOriginal2 To IDb, Array.Length: {imageOriginal2.Array.Length}");
+            var addedResult = await IndexedDbContext.AddItems<ImageOriginal2>(new List<ImageOriginal2> { imageOriginal2 });
+
+            byte[] resizedArray = ImageProc.ResizeSkiaDefaut(bitmap);
+            SKBitmap resizedBitmap = SKBitmap.Decode(resizedArray);
+            ImageResized2 imageResized2= new ImageResized2()
+            {
+                Id = maxKey + 1,
+                Array = resizedArray,
+                Name = imageName,
+                Width = resizedBitmap.Width,
+                Height = resizedBitmap.Height,
+                OriginalWidth = bitmap.Width,
+                OriginalHeight = bitmap.Height,
+                OriginalSize = imageArray.Length,
+                Date = CurrentDate
+            };
+            //Console.WriteLine($"Add ImageResized2 To IDb, Array.Length: {imageResized2.Array.Length}");
+            var addedResult2 = await IndexedDbContext.AddItems<ImageResized2>(new List<ImageResized2> { imageResized2 });
+
+            return maxKey + 1;
+        }
+
+        public async Task<ImageResized2> FetchImageResized2(int imageId)
+        {
+            var result = await IndexedDbContext.GetByKey<int, ImageResized2>(imageId);
+            //var result = await this.GetByIndex<string, ImageResized>(imageName, ImageNameIndex);
+            return result;
+        }
+
+        public async Task<ImageOriginal2> FetchImageOriginal2(int imageId)
+        {
+            var result = await IndexedDbContext.GetByKey<int, ImageOriginal2>(imageId);
+            //var result = await this.GetByIndex<string, ImageResized>(imageName, ImageNameIndex);
+            return result;
+        }
+
+        public async Task UpdateIDb2(SKBitmap sKBitmap, int imageId, string imageName)
+        {
+            string CurrentDate = DateTime.Now.ToString();
+            byte[] sKBitmapArray = ImageProc.SKBitmapToArray(sKBitmap);
+            var imageOriginal2 = new ImageOriginal2()
+            {
+                Id = imageId,
+                Array = sKBitmapArray,
+                Name = imageName,
+                Width = sKBitmap.Width,
+                Height = sKBitmap.Height,
+                Date = CurrentDate
+            };
+            byte[] resizedArray = ImageProc.ResizeSkiaDefaut(sKBitmap);
+            SKBitmap resizedBitmap = SKBitmap.Decode(resizedArray);
+            var imageResized2 = new ImageResized2()
+            {
+                Id = imageId,
+                Array = resizedArray,
+                Name = imageName,
+                Width = resizedBitmap.Width,
+                Height = resizedBitmap.Height,
+                OriginalWidth = sKBitmap.Width,
+                OriginalHeight = sKBitmap.Height,
+                OriginalSize = sKBitmapArray.Length,
+                Date = CurrentDate
+            };
+            var openDbResult = await IndexedDbContext.OpenIndexedDb();
+            var result = await IndexedDbContext.UpdateItems<ImageOriginal2>(
+                                new List<ImageOriginal2>() { imageOriginal2 });
+            var result2 = await IndexedDbContext.UpdateItems<ImageResized2>(
+                                new List<ImageResized2>() { imageResized2 });
         }
     }
 }

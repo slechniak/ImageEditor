@@ -22,6 +22,19 @@
             @oninput="(e) => HandleInput(e, isWidth: false)">
     </div>
 
+    <div class="form-check mb-4">
+      <input class="form-check-input" type="checkbox" value="@size.KeepAspectRatio" id="flexCheckChecked" checked
+            @onchange="(e) => size.KeepAspectRatio = !size.KeepAspectRatio">
+      <label class="form-check-label" for="flexCheckChecked">Keep aspect ratio</label>
+    </div>
+
+    <div class="input-group mb-4">
+      <span class="input-group-text w-25">Times:</span>
+      <input value="@size.Times" type="number" step="0.01"
+            class="form-control" aria-label="Text input" disabled="@(!size.KeepAspectRatio)"
+            @oninput="(e) => HandleInputTimes(e)">
+    </div>
+
     <button type="submit" class="btn btn-primary">Resize</button>
     <button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>
 </EditForm>
@@ -29,8 +42,10 @@
 @code {
     public class Size
     {
-        public int? Width { get; set; } = 0;
-        public int? Height { get; set; } = 0;
+        public int Width { get; set; } = 0;
+        public int Height { get; set; } = 0;
+        public float Times { get; set; } = 1;
+        public bool KeepAspectRatio { get; set; } = true;
     }
 
     [CascadingParameter] 
@@ -48,24 +63,57 @@
         base.OnInitialized();
     }
 
+    private void HandleInputTimes(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            string str = (string)e.Value;
+            float number;
+            if (float.TryParse(str, out number))
+            {
+                size.Width = (int)(OriginalWidth * number);
+                size.Height = (int)(OriginalHeight * number);
+            }
+            else
+            {
+            }
+        }
+    }
+
     private void HandleInput(ChangeEventArgs e, bool isWidth)
     {
         //SizeChanged(Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0), null);
         //SizeChanged(null, Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0));
-        string str = (string)e.Value;
-        int number;
-        if (!Int32.TryParse(str, out number))
+        if (e.Value != null)
         {
-            //number = 0;
-            size.Width = null;
-            size.Height = null;
-        }
-        else
-        {
-            if (isWidth)
-                SizeChanged(number, null);
+            string str = (string)e.Value;
+            int number;
+            if (!Int32.TryParse(str, out number))
+            {
+                //number = 0;
+                //size.Width = null;
+                //size.Height = null;
+                size.Width = 0;
+                size.Height = 0;
+            }
             else
-                SizeChanged(null, number);
+            {
+                if ((bool)size.KeepAspectRatio)
+                {
+                    if (isWidth)
+                        SizeChanged(number, null);
+                    else
+                        SizeChanged(null, number);
+                }
+                else
+                {
+                    if (isWidth)
+                        size.Width = number;
+                    else
+                        size.Height = number;
+                }
+                //size.Times = (float)Math.Round((float)size.Width / OriginalWidth, 2);
+            }
         }
     }
 
@@ -76,6 +124,7 @@
         //size.Height = info.Height == 0 ? null : info.Height;
         size.Width = info.Width;
         size.Height = info.Height;
+        size.Times = (float)Math.Round((float)info.Width / OriginalWidth, 2);
     }
 
     private async Task ResizeImage()

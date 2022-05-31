@@ -19,23 +19,27 @@
         string imageType = imageFile.ContentType;
 
         // add original and data to idb
-        var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
+        //var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
 
         // add resized to idb
-        var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
-        
+        //var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
+
+        // add image to idb
+        int imageId = await IDbManager.AddImageToIDb(imageArray, imageFile.Name);
+
         //GoToEditor(imageFile.Name);
-        await GoToEditor(imageFile.Name);
+        await GoToEditor(imageFile.Name, imageId);
 
         await ParentMethod.InvokeAsync();
 
         SService.NotifyStateChanged();
     }
 
-    public async Task GoToEditor(string imageName)
+    public async Task GoToEditor(string imageName, int imageId)
     {
         // save imageName to local storage
         await LSManager.SaveImageName(imageName);
+        await LSManager.SaveImageId(imageId);
         // save imageName to state service
         //SService.ImageName = imageName;
         //NavigationManager.NavigateTo($"editor/{imageName}");

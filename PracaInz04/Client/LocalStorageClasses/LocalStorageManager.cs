@@ -9,6 +9,7 @@ namespace PracaInz04.Client.LocalStorageClasses
         public StateService SService { get; set; }
         public string CountKey { get; set; } = "count";
         public string ImageNameKey { get; set; } = "imageName";
+        public string ImageIdKey { get; set; } = "imageId";
         //public Dictionary<string, string> keys = new(){
         //{"count", "count"},
         //{"imageName", "imageName"}
@@ -28,6 +29,16 @@ namespace PracaInz04.Client.LocalStorageClasses
         public async Task<string> GetImageName()
         {
             return await LStorage.GetItemAsync<string>(ImageNameKey);
+        }
+
+        public async Task SaveImageId(int imageId)
+        {
+            await LStorage.SetItemAsync(ImageIdKey, imageId);
+        }
+
+        public async Task<int?> GetImageId()
+        {
+            return await LStorage.GetItemAsync<int?>(ImageIdKey);
         }
 
         //counter

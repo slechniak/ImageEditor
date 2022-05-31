@@ -8,6 +8,7 @@
 @using SixLabors.ImageSharp.Formats.Tiff
 @inject IJSRuntime JS
 @inject StateService SService
+@inject IndexedDbManager IDbManager
 
 <EditForm Model="@filename" OnValidSubmit="@DownloadImage">
     <DataAnnotationsValidator />
@@ -48,7 +49,9 @@
     IModalService Modal { get; set; }
     private FileName filename = new();
     public static List<string> formats = new() { "png", "jpeg", "webp", "bmp", "gif", "tiff"};
-    
+    [Parameter] 
+    public int? ImageId { get; set; }
+
     private async Task DownloadImage()
     {
         Console.WriteLine($"DownloadImage: {filename.Name}.{filename.Format}");
@@ -60,7 +63,7 @@
 
     private async Task DownloadFileFromStream()
     {
-        var fileStream = GetFileStream();
+        var fileStream = await GetFileStream();
         var fileName = filename.GetFileName();
 
         using var streamRef = new DotNetStreamReference(stream: fileStream);
@@ -68,9 +71,12 @@
         await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }
 
-    private Stream GetFileStream()
+    private async Task<Stream> GetFileStream()
     {
-        var bitmapArray = SKBitmapToArrayAnyFormat();
+        byte[] bitmapArray = {};
+        if (ImageId != null)
+            SService.bitmap = SKBitmap.Decode((await IDbManager.FetchImageOriginal2((int)ImageId)).Array);
+        bitmapArray = SKBitmapToArrayAnyFormat();
         var fileStream = new MemoryStream(bitmapArray);
 
         return fileStream;

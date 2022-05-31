@@ -39,6 +39,8 @@ namespace PracaInz04.Client.IndexedDbClasses
             public string  Thumbnail { get; set; }
         }
 
+
+        //stores resized image and additional info
         public class ImageResized
         {
             [IndexDbKey(AutoIncrement = true)]
@@ -64,6 +66,32 @@ namespace PracaInz04.Client.IndexedDbClasses
             public string ImageType { get; set; }
         }
 
+
+        // common additional info
+        public class ImageCommon
+        {
+            [IndexDbKey(AutoIncrement = true)]
+            public int? Id { get; set; }
+            [IndexDbIndex]
+            public string Name { get; set; }
+            public byte[] Array { get; set; }
+            public int Width { get; set; }
+            public int Height { get; set; }
+            public string Date { get; set; }
+        }
+
+        //stores resized image and additional info
+        public class ImageResized2 : ImageCommon 
+        {
+            public int OriginalWidth { get; set; }
+            public int OriginalHeight { get; set; }
+            public int OriginalSize { get; set; }
+        }
+
+        //stores original image and additional info
+        public class ImageOriginal2 : ImageCommon { }
+
+
         public static IndexedDbDatabaseModel GetIndexedDbDatabaseModelAttributeBased()
         {
             var indexedDbDatabaseModel = new IndexedDbDatabaseModel()
@@ -75,6 +103,9 @@ namespace PracaInz04.Client.IndexedDbClasses
 
             indexedDbDatabaseModel.AddStore<ImageResized>();
             indexedDbDatabaseModel.AddStore<ImageData>();
+
+            indexedDbDatabaseModel.AddStore<ImageResized2>();
+            indexedDbDatabaseModel.AddStore<ImageOriginal2>();
 
             return indexedDbDatabaseModel;
         }

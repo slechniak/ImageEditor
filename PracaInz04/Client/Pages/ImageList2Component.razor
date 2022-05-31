@@ -7,57 +7,61 @@
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService LocalStorage
 @inject LocalStorageManager LSManager
-<div class="container-fluid h-100 overflow-auto">
-    <h5>ImageListComponent</h5>
-    <div class="card-deck">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-            <div class="col">
-                <div class="card">
-                    @*<img class="card-img-top" src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg" alt="Card image cap">*@
-                    <img class="card-img-top" src="images/placeholder.svg" alt="Card image cap">
-                    <div class="card-body">
-                        <h5 class="card-title">Upload an image</h5>
-                        @*<p class="card-text">Description</p>*@
-                        <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
-                    </div>
+@*<div class="card-deck">*@
+<div class="container-fluid h-100 overflow-auto py-2">
+    @*<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">*@
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+        <div class="col">
+            <div class="card h-100">
+                @*<img class="card-img-top" src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg" alt="Card image cap">*@
+                @*<img class="card-img-top" src="images/placeholder.svg" alt="Card image cap">*@
+                <img class="img-thumbnail" src="images/placeholder.svg" alt="Card image cap">
+                <div class="card-body">
+                    <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
                 </div>
             </div>
-            @if(imageInfos.Count != 0)
+        </div>
+        @if(imageInfos2.Count != 0)
+        {
+            @foreach (var imageInfo in imageInfos2)
             {
-                @foreach (var imageInfo in imageInfos)
-                {
-                    @*do sth with it*@
-                    <div class="col">
-                        <div class="card">
-                            <img class="card-img-top" src="@imageInfo.thumbnail" alt="Card image cap">
-                            <div class="card-body">
-                                <h5 class="card-title">@imageInfo.name</h5>
-                                <p class="card-text">Image details</p>
-								<div class="d-flex justify-content-center">
-                                    <button @onclick="() => uploadImageComponent.GoToEditor(imageInfo.name)" class="btn btn-primary flex-fill mx-1">Edit</button>
-                                    <button class="btn btn-primary flex-fill mx-1">Save</button>
-                                    <button class="btn btn-primary flex-fill mx-1">Delete</button>
-                                </div>
+                @*do sth with it*@
+                <div class="col">
+                    <div class="card h-100">
+                        @*<img class="card-img-top" src="@imageInfo.Thumbnail" alt="Card image cap">*@
+                        @*<img class="" style="object-fit: contain; max-height: 50%;" src="@imageInfo.Thumbnail" alt="Card image cap">*@
+                        <img class="card-img-top" style="image-rendering: pixelated;" src="@imageInfo.Thumbnail" alt="Card image cap">
+                        <div class="card-body">
+                            <p class="card-title lead fw-bold">@imageInfo.Name</p>
+                            <p class="card-text my-2">Last modified: @imageInfo.Date</p>
+                            <p class="card-text my-2">Dimensions: @imageInfo.Dimensions</p>
+                            <p class="card-text my-2">Size: @($"{imageInfo.Size.ToString("0.00")}MB")</p>
+                        </div>
+                        <div class="card-footer">
+							<div class="d-flex justify-content-center">
+                                <button @onclick="() => uploadImageComponent.GoToEditor(imageInfo.Name, imageInfo.Id)" class="btn btn-primary flex-fill mx-1">Edit</button>
+                                <button @onclick="() => ModalShowDownloadComponent(imageInfo.Id)" class="btn btn-primary flex-fill mx-1">Download</button>
+                                <button class="btn btn-primary flex-fill mx-1">Delete</button>
                             </div>
                         </div>
                     </div>
-                }
-            }
-            else
-            {
-                <p>list is empty</p>
-            }
-            @*<div class="col">
-                <div class="card">
-                    <img class="card-img-top" src="..." alt="Card image cap">
-                    <div class="card-body">
-                        <h5 class="card-title">Upload an image</h5>
-                        <p class="card-text">Description</p>
-                        <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
-                    </div>
                 </div>
-            </div>*@
-        </div>
+            }
+        }
+        else
+        {
+            <p>list is empty</p>
+        }
+        @*<div class="col">
+            <div class="card">
+                <img class="card-img-top" src="..." alt="Card image cap">
+                <div class="card-body">
+                    <h5 class="card-title">Upload an image</h5>
+                    <p class="card-text">Description</p>
+                    <UploadImageComponent @ref="uploadImageComponent"></UploadImageComponent>
+                </div>
+            </div>
+        </div>*@
     </div>
 </div>
 
@@ -66,13 +70,32 @@
     //List<ImageDto> imageDtoListResult = new List<ImageDto>();
     //List<string> srcImageList = new List<string>();
     //List<ImageInfo> thumbnailList = new List<ImageInfo>();
+    private class ImageDetail
+    {
+        public string Thumbnail { get; set; }
+        public string Name { get; set; }
+        public string Date { get; set; }
+        public string Dimensions { get; set; }
+        public int Id { get; set; }
+        public float Size { get; set; }
+    }
 
-    List<ImageResized> resizedImages = new List<ImageResized>();
-    List<string> thumbnails = new List<string>();
-    List<(string thumbnail,
-          string name)> imageInfos = new List<(string, string)>();
+    //List<ImageResized> resizedImages = new List<ImageResized>();
+    List<ImageResized2> resizedImages2 = new List<ImageResized2>();
+    //List<string> thumbnails = new List<string>();
+    //List<(string thumbnail, string name)> imageInfos = new List<(string, string)>();
+    List<ImageDetail> imageInfos2 = new List<ImageDetail>();
 
     UploadImageComponent uploadImageComponent;
+    [CascadingParameter] 
+    public IModalService Modal { get; set; }
+
+    private void ModalShowDownloadComponent(int imageId)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add("ImageId", imageId);
+        Modal.Show<DownloadComponent>("Download image", parameters);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,28 +107,43 @@
         await base.OnInitializedAsync();
     }
 
-    public async Task SetResizedImages()
-    {
-        resizedImages = await IndexedDbContext.GetAll<ImageResized>();
-        Console.WriteLine("SetResizedImages ended");
-    }
-
-    public async Task SetImageInfos()
-    {
-        imageInfos = new List<(string, string)>();
-        foreach(var image in resizedImages)
-        {
-            string src = await ImageProc.GetImageURL(image.ImageArray);
-            imageInfos.Add((src, image.ImageName));
-        }
-        Console.WriteLine("SetImageInfos ended");
-    }
-
     public async Task LoadThumbnails()
     {
         await SetResizedImages();
         //await SetThumbnails();
         await SetImageInfos();  
+    }
+
+    public async Task SetResizedImages()
+    {
+        //resizedImages = await IndexedDbContext.GetAll<ImageResized>();
+        resizedImages2 = await IndexedDbContext.GetAll<ImageResized2>();
+        Console.WriteLine("SetResizedImages ended");
+    }
+
+    public async Task SetImageInfos()
+    {
+        //imageInfos = new List<(string, string)>();
+        imageInfos2 = new List<ImageDetail>();
+        //foreach(var image in resizedImages)
+        //{
+        //    string src = await ImageProc.GetImageURL(image.ImageArray);
+        //    imageInfos.Add((src, image.ImageName));
+        //}
+        foreach(var image in resizedImages2)
+        {
+            string src = await ImageProc.GetImageURL(image.Array);
+            imageInfos2.Add(new ImageDetail()
+            {
+                Thumbnail = src,
+                Name = image.Name,
+                Date = image.Date,
+                Dimensions = $"{image.OriginalWidth}x{image.OriginalHeight}",
+                Id = (int)image.Id,
+                Size = (float)image.OriginalSize/(1024*1024)
+            });
+        }
+        Console.WriteLine("SetImageInfos ended");
     }
 
     // code from idbtest
