@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using PracaInz04.Client.Controls;
+using PracaInz04.Client.Controls;
 using SkiaSharp;
 using SkiaSharp.Views.Blazor;
 using static PracaInz04.Client.IndexedDbClasses.IndexedDBModels;
@@ -75,7 +76,7 @@ namespace PracaInz04.Client.Pages
         float tiltAngle = 0;
         bool tilting = false;
         SKPoint[] tiltedBitmapCorners;
-        SKRect tiltedBitmapRect;
+        SKRect tiltedBitmapBoundsRect;
         bool makeSelectRect = false;
         int minAngle = -45;
         int maxAngle = 45;
@@ -87,6 +88,10 @@ namespace PracaInz04.Client.Pages
         bool moveSelectX = false;
         bool moveSelectY = false;
         bool showSelectionHandles = false;
+        SKBitmap tiltedView;
+        bool tiltAngleChanged = false;
+        int scrollValueDefault = 5;
+        int scrollValue = 5;
 
         private Dictionary<string, object> CanvasAttributes { get; set; }
         //new(){{ "width", "500" },{ "height", "500" }};
@@ -131,6 +136,50 @@ namespace PracaInz04.Client.Pages
             //}
         }
 
+        private SKBitmap GetTiltedView(SKImageInfo info)
+        {
+            float ratio = (float)sKBitmap.Width / bitmapRect.Width;
+            SKImageInfo info2 = new SKImageInfo((int)Math.Round(info.Width * ratio), 
+                                                (int)Math.Round(info.Height * ratio));
+            // bitmapRect2.size = skbitmap.size (pixels)
+            SKRect bitmapRect2 = new SKRect(bitmapRect.Left * ratio, bitmapRect.Top * ratio,
+                                            bitmapRect.Right * ratio, bitmapRect.Bottom * ratio);
+            // optional s1
+            //bitmapRect2.Left = (float)Math.Ceiling(bitmapRect2.Left);
+            //bitmapRect2.Top = (float)Math.Ceiling(bitmapRect2.Top);
+            //bitmapRect2.Right = (float)Math.Ceiling(bitmapRect2.Right);
+            //bitmapRect2.Bottom = (float)Math.Ceiling(bitmapRect2.Bottom);
+            // optional e1
+            SKBitmap surface2 = new SKBitmap(info2);
+            using(SKCanvas canvas = new SKCanvas(surface2))
+            {
+                canvas.RotateDegrees(tiltAngle, info2.Rect.MidX, info2.Rect.MidY);
+                canvas.DrawBitmap(sKBitmap, bitmapRect2);
+                canvas.RotateDegrees(-tiltAngle, info2.Rect.MidX, info2.Rect.MidY);
+            }
+
+            return surface2;
+        }
+
+        private SKBitmap GetTiltedView2()
+        {
+            float ratio = (float)sKBitmap.Width / bitmapRect.Width;
+            SKImageInfo info2 = new SKImageInfo((int)Math.Round(tiltedBitmapBoundsRect.Width * ratio),
+                                                (int)Math.Round(tiltedBitmapBoundsRect.Height * ratio));
+            
+            SKBitmap surface2 = new SKBitmap(info2);
+            using (SKCanvas canvas = new SKCanvas(surface2))
+            {
+                canvas.RotateDegrees(tiltAngle, surface2.Width / 2, surface2.Height / 2);
+                canvas.DrawBitmap(sKBitmap, new SKPoint((info2.Width - sKBitmap.Width) / 2,
+                                                        (info2.Height - sKBitmap.Height) / 2));
+                canvas.RotateDegrees(-tiltAngle, surface2.Width / 2, surface2.Height / 2);
+            }
+
+            return surface2;
+        }
+
+        // private void OnPaintSurface(SKPaintSurfaceEventArgs e)
         private void OnPaintSurface(SKPaintSurfaceEventArgs e)
         {
             SKImageInfo info = e.Info;
@@ -154,13 +203,37 @@ namespace PracaInz04.Client.Pages
 
             scrollScaleChanged = false;
 
-            // tilting - rotate bitmap
+            // create unselected path, add bitmapRect
+            SKPath unselected = new SKPath();
+            unselected.AddRect(bitmapRect);
+
+            // tilting - rotate view, tilt unselected path (bitmapRect)
             if (tilting)
             {
-                canvas.RotateDegrees(tiltAngle, infoMiddleX, infoMiddleY);
-                //canvas.DrawBitmap(sKBitmap, bitmapRect, new SKPaint() { IsAntialias = true });
-                canvas.DrawBitmap(sKBitmap, bitmapRect);
-                canvas.RotateDegrees(-tiltAngle, infoMiddleX, infoMiddleY);
+                TiltUnselected(unselected);
+                if (Math.Max(sKBitmap.Width, sKBitmap.Height) > 1000)
+                {
+                    // tilting pixel grid too
+                    canvas.RotateDegrees(tiltAngle, infoMiddleX, infoMiddleY);
+                    //canvas.DrawBitmap(sKBitmap, bitmapRect, new SKPaint() { IsAntialias = true });
+                    canvas.DrawBitmap(sKBitmap, bitmapRect);
+                    canvas.RotateDegrees(-tiltAngle, infoMiddleX, infoMiddleY);
+                }
+                else
+                {
+                    // close to cropped
+                    tiltedView = GetTiltedView2();
+                    canvas.DrawBitmap(tiltedView, tiltedBitmapBoundsRect);
+                }
+
+                //if (tiltAngleChanged)
+                //{
+                //    tiltedView = GetTiltedView(info);
+                //    tiltAngleChanged = false;
+                //}
+
+                //tiltedView = GetTiltedView(info);
+                //canvas.DrawBitmap(tiltedView, new SKRect(0, 0, info.Width, info.Height));
             }
             else
             {
@@ -178,16 +251,16 @@ namespace PracaInz04.Client.Pages
             canvas.DrawLine(infoMiddleX - crossLength, infoMiddleY, infoMiddleX + crossLength, infoMiddleY, crossPaint);
             canvas.DrawLine(infoMiddleX, infoMiddleY - crossLength, infoMiddleX, infoMiddleY + crossLength, crossPaint);
 
-
+            // original position of code
             // create unselected path, add bitmapRect
-            SKPath unselected = new SKPath();
-            unselected.AddRect(bitmapRect);
+            //SKPath unselected = new SKPath();
+            //unselected.AddRect(bitmapRect);
 
             // tilt unselected path (bitmapRect) + generate initial selectRect
             if (tilting)
             {
                 // tilt unselected (bitmapRect)
-                TiltUnselected(unselected);
+                //TiltUnselected(unselected);
 
                 // calculate selectRect
                 if (makeSelectRect)
@@ -289,11 +362,15 @@ namespace PracaInz04.Client.Pages
             if (tiltAngle == 0)
                 ResetTilt();
             else
+            {
+                tiltAngleChanged = true;
                 TiltImage();
+            }
             //Console.WriteLine(e.Value);
         }
 
-        private void OnMouseWheel(WheelEventArgs e)
+        // original OnMouseWheel
+        private void OnMouseWheel1(WheelEventArgs e)
         {
             if (e.DeltaY > 0)
             {
@@ -309,6 +386,30 @@ namespace PracaInz04.Client.Pages
                     scrollScale = (float)Math.Round(scrollScale - 0.1f, 1);
                 }
             }
+            //Console.WriteLine($"OnMouseWheel: {e.DeltaY}, {scrollScale}");
+            scrollScaleChanged = true;
+            skiaView.Invalidate();
+        }
+
+        // OnMouseWheel2
+        private void OnMouseWheel(WheelEventArgs e)
+        {
+            if (e.DeltaY > 0)
+            {
+                scrollValue++;
+            }
+            else
+            {
+                scrollValue--;
+                scrollValue = Math.Max(scrollValue, 0);
+            }
+            float c = 0.2f;
+            int steps = scrollValueDefault;
+            float a = ((1 - c) / (steps * steps));
+            scrollScale = a * scrollValue * scrollValue + c;
+
+            //scrollScale = 0.032f * scrollValue * scrollValue + 0.2f;
+            
             //Console.WriteLine($"OnMouseWheel: {e.DeltaY}, {scrollScale}");
             scrollScaleChanged = true;
             skiaView.Invalidate();
@@ -585,6 +686,7 @@ namespace PracaInz04.Client.Pages
             tilting = true;
             makeSelectRect = true;
             ResetPanOffset();
+            ResetScale();
             skiaView.Invalidate();
         }
 
@@ -612,6 +714,8 @@ namespace PracaInz04.Client.Pages
 
             skiaView.Invalidate();
         }
+
+        // private void CropImage() private void CropImage() private void CropImage() 
 
         // zeby zachowywalo piksele obrazkow o niskiej rozdzielczosci
         // - trzeba zwiekszyc rodzielczosc croppedBitmap i rotatedBitmap
@@ -642,6 +746,8 @@ namespace PracaInz04.Client.Pages
                 // trzeba przeniesc bitmapRect i cropRect do cwiartki x,y>=0
                 float movX = -new List<float>() { cropRect.Left, cropRect.Right, 0 }.Min();
                 float movY = -new List<float>() { cropRect.Top, cropRect.Bottom, 0 }.Min();
+                //movX = (float)Math.Ceiling(movX);
+                //movY = (float)Math.Ceiling(movX);
                 result = SKMatrix.CreateIdentity();
                 translate = SKMatrix.CreateTranslation(movX, movY);
                 SKMatrix.PreConcat(ref result, translate);
@@ -698,6 +804,7 @@ namespace PracaInz04.Client.Pages
 
         private void ResetScale()
         {
+            scrollValue = scrollValueDefault;
             scrollScale = 1;
             scrollScaleChanged = true;
             skiaView.Invalidate();
@@ -788,7 +895,7 @@ namespace PracaInz04.Client.Pages
             SKMatrix result = SKMatrix.CreateRotationDegrees(tiltAngle, infoMiddleX, infoMiddleY);
             unselected.Transform(result);
             tiltedBitmapCorners = unselected.Points;
-            tiltedBitmapRect = unselected.Bounds;
+            tiltedBitmapBoundsRect = unselected.Bounds;
         }
 
         private void SetUpNewSelectRect()
@@ -834,8 +941,8 @@ namespace PracaInz04.Client.Pages
             SKPoint Btb = tiltedBitmapCorners[1];
             SKPoint Ctb = tiltedBitmapCorners[2];
             SKPoint Dtb = tiltedBitmapCorners[3];
-            SKPoint A = new SKPoint(tiltedBitmapRect.Left, tiltedBitmapRect.Top);
-            SKPoint B = new SKPoint(tiltedBitmapRect.Right, tiltedBitmapRect.Top);
+            SKPoint A = new SKPoint(tiltedBitmapBoundsRect.Left, tiltedBitmapBoundsRect.Top);
+            SKPoint B = new SKPoint(tiltedBitmapBoundsRect.Right, tiltedBitmapBoundsRect.Top);
             SKPoint? ip1, ip2;
             if (tiltAngle > 0)
             {
