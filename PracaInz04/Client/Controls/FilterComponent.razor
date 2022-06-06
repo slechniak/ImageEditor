@@ -1,0 +1,62 @@
+﻿@using static PracaInz04.Client.ImageProcessingClasses.ImageProcessing
+@inject StateService SService
+@inject ImageProcessing ImageProc
+
+<EditForm Model="@filterOptions" OnValidSubmit="@FilterImage">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="input-group mb-4">
+      <span class="input-group-text">Filter type:</span>
+      <select @bind="filterOptions.FilterType" class="form-select">
+          @foreach(var fType in filterTypeList)
+            {
+                <option value=@fType>@fType</option>
+            }
+      </select>
+    </div>
+    
+    <label for="customRange1" class="form-label pt-2 px-2">Treshold</label>
+        <input 
+            @bind="filterOptions.treshold"
+            min="0" max="255"
+            type="range" class="form-range m-2 w-50" id="customRange1">
+        <input 
+            @bind="filterOptions.treshold"
+            type="number" class="form-control m-2 w-50" id="formControlInput1">
+
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>
+</EditForm>
+
+@code {
+    public class FilterOptions
+    {
+        public FilterType FilterType { get; set; } = FilterType.Grayscale;
+        public int treshold { get; set; } = 128;
+    }
+
+    [CascadingParameter] 
+    BlazoredModalInstance ModalInstance { get; set; }
+    private FilterOptions filterOptions = new();
+    public Array filterTypeList;
+
+    public void FilterImage()
+    {
+        switch (filterOptions.FilterType)
+        {
+            case ImageProcessing.FilterType.Grayscale:
+                SService.bitmap = ImageProc.FilterGrayscale(SService.bitmap);
+                break;
+            case ImageProcessing.FilterType.Binary:
+                SService.bitmap = ImageProc.FilterBinary(SService.bitmap, filterOptions.treshold);
+                break;
+        }
+        ModalInstance.CloseAsync();
+    }
+
+    protected override void OnInitialized()
+    {
+        filterTypeList = Enum.GetValues(typeof(FilterType));
+    }
+}

@@ -85,6 +85,9 @@
             <button class="btn btn-primary m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
             @*<button class="btn btn-primary m-2 w-50" @onclick="@(() => Progress(SaveImage, message: "Saving..."))">Save image</button>*@
             <button class="btn btn-primary m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
+            @*<button class="btn btn-primary m-2 w-50" @onclick="() => FilterImage(ImageProcessing.FilterType.Grayscale)">Filter image</button>*@
+            @*<button class="btn btn-primary m-2 w-50" @onclick="() => FilterImage(ImageProcessing.FilterType.Binary)">Filter image</button>*@
+            <button class="btn btn-primary m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>
 		</div>
 	</div>
 </div>
@@ -1434,4 +1437,27 @@
         //    await Task.Delay(1); 
         //}
 
+	// v2
+	//using(var ms = new MemoryStream())
+	//{
+	//	resultBitmap.Encode(ms, SKEncodedImageFormat.Png, 100);
+	//	imageResult = ms.ToArray();
+	//}
+	//v3
+	//using(SKImage skImage = SKImage.FromBitmap(resultBitmap))
+	//{
+	//	var skData = skImage.Encode(SKEncodedImageFormat.Png, 100);
+	//	imageResult = skData.ToArray();
+	//}
+    // slow
+		//public string GetImageSrc(byte[] imageArray)
+		//{
+		//	string imgSrc;
+		//	using (Image image = Image.Load(imageArray, out var imageFormat))
+		//	{
+		//		imgSrc = image.ToBase64String(imageFormat);
+		//		imgSrc = $"data:{imageType};base64,{Convert.ToBase64String(imageArray)}";
+		//	}
+		//	return imgSrc;
+		//}
 }

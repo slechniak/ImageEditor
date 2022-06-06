@@ -13,10 +13,15 @@ namespace PracaInz04.Client.ImageProcessingClasses
 {
     public class ImageProcessing
     {
-        public IJSRuntime JS { get; set; }
-		public int width { get; set; } = 500;
-		public int LongerResized { get; set; } = 1000;
+		public enum FilterType
+		{
+			Grayscale,
+			Binary
+		}
 
+		public IJSRuntime JS { get; set; }
+		public int LongerResized { get; set; } = 1000;
+		
 		public ImageProcessing(IJSRuntime jSRuntime)
 		{
 			JS = jSRuntime;
@@ -154,18 +159,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return imgSrc;
 		}
 
-		// slow
-		public string GetImageSrc(byte[] imageArray)
-		{
-			string imgSrc;
-			using (Image image = Image.Load(imageArray, out var imageFormat))
-			{
-				imgSrc = image.ToBase64String(imageFormat);
-				//imgSrc = $"data:{imageType};base64,{Convert.ToBase64String(imageArray)}";
-			}
-			return imgSrc;
-		}
-
 		public byte[] SKBitmapToArray(SKBitmap bitmap)
 		{
 			var skData = bitmap.Encode(SKEncodedImageFormat.Png, 100);
@@ -173,18 +166,112 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return bitmapArray;
 		}
 
-	}
+		public SKBitmap FilterBitmap(SKBitmap bitmap, FilterType filterType, params object[] args)
+        {
+			switch(filterType)
+            {
+				case FilterType.Grayscale:
+					return FilterGrayscale(bitmap);
+				case FilterType.Binary:
+					return FilterBinary(bitmap, (int)args[0]);
+				default:
+					return bitmap;
+            }
+        }
 
-	// v2
-	//using(var ms = new MemoryStream())
-	//{
-	//	resultBitmap.Encode(ms, SKEncodedImageFormat.Png, 100);
-	//	imageResult = ms.ToArray();
-	//}
-	//v3
-	//using(SKImage skImage = SKImage.FromBitmap(resultBitmap))
-	//{
-	//	var skData = skImage.Encode(SKEncodedImageFormat.Png, 100);
-	//	imageResult = skData.ToArray();
-	//}
+		public SKBitmap ApplyFilter(SKBitmap bitmap, SKColorFilter colorFilter)
+        {
+			SKBitmap result = new SKBitmap(bitmap.Info);
+			using (SKCanvas canvas = new SKCanvas(result))
+			{
+				SKPaint paint = new SKPaint()
+				{
+					ColorFilter = colorFilter
+				};
+				canvas.DrawBitmap(bitmap, result.Info.Rect, paint);
+			}
+			return result;
+		}
+
+		public SKBitmap FilterBinary(SKBitmap bitmap, int treshold)
+		{
+			byte[] table = BinaryTable(treshold);
+			SKBitmap grayscaleBitmap = FilterGrayscale(bitmap);
+			return ApplyFilter(grayscaleBitmap, SKColorFilter.CreateTable(
+				null, table, table, table));
+		}
+
+		public SKBitmap FilterGrayscale(SKBitmap bitmap)
+		{
+			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
+				GrayscaleMatrix()));
+		}
+
+		public float[] GrayscaleMatrix()
+        {
+			float[] matrix = new float[]
+			{
+				0.21f, 0.72f, 0.07f, 0, 0,
+				0.21f, 0.72f, 0.07f, 0, 0,
+				0.21f, 0.72f, 0.07f, 0, 0,
+				0,     0,     0,     1, 0
+			};
+			return matrix;
+		}
+
+		public byte[] BinaryTable(int treshold)
+		{
+			byte[] table = new byte[256];
+            for (int i = 0; i < treshold; i++)
+            {
+                table[i] = 0;
+            }
+			for (int i = treshold; i < 256; i++)
+			{
+				table[i] = 255;
+			}
+
+			return table;
+		}
+
+		public float[] IdentityMatrix()
+        {
+			return new float[]
+			{
+				1, 0, 0, 0, 0,
+				0, 1, 0, 0, 0,
+				0, 0, 1, 0, 0,
+				0, 0, 0, 1, 0
+			};
+		}
+
+		//public SKBitmap FilterGrayscale1(SKBitmap bitmap)
+		//{
+		//	SKBitmap result = new SKBitmap(bitmap.Info);
+		//	using (SKCanvas canvas = new SKCanvas(result))
+		//	{
+		//		SKPaint paint = new SKPaint()
+		//		{
+		//			ColorFilter = SKColorFilter.CreateColorMatrix(GrayscaleMatrix())
+		//	};
+		//		canvas.DrawBitmap(bitmap, result.Info.Rect, paint);
+		//	}
+		//	return result;
+		//}
+
+		//public SKBitmap FilterBinary1(SKBitmap bitmap)
+		//{
+		//	SKBitmap result = new SKBitmap(bitmap.Info);
+		//	using (SKCanvas canvas = new SKCanvas(result))
+		//	{
+		//		SKPaint paint = new SKPaint()
+		//		{
+		//			ColorFilter = SKColorFilter.CreateTable(BinaryTable(128))
+		//		};
+		//		SKBitmap grayscaleBitmap = FilterGrayscale(bitmap);
+		//		canvas.DrawBitmap(grayscaleBitmap, result.Info.Rect, paint);
+		//	}
+		//	return result;
+		//}
+	}
 }

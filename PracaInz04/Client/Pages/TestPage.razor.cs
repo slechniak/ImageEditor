@@ -92,6 +92,7 @@ namespace PracaInz04.Client.Pages
         bool tiltAngleChanged = false;
         int scrollValueDefault = 5;
         int scrollValue = 5;
+        int treshold = 128;
 
         private Dictionary<string, object> CanvasAttributes { get; set; }
         //new(){{ "width", "500" },{ "height", "500" }};
@@ -655,6 +656,24 @@ namespace PracaInz04.Client.Pages
             //skiaView.Invalidate();
         }
 
+        private async Task ModalShowFilterComponent()
+        {
+            SService.bitmap = sKBitmap;
+            var formModal = Modal.Show<FilterComponent>("Filter image");
+            var result = await formModal.Result;
+
+            if (result.Cancelled)
+            {
+                Console.WriteLine("Modal was cancelled");
+            }
+            else
+            {
+                Console.WriteLine("Modal was accepted (filter)");
+                AddBitmap(SService.bitmap);
+                skiaView.Invalidate();
+            }
+        }
+
         private void SetBitmapRect(SKImageInfo info)
         {
             float scale = Math.Min((float)info.Width / sKBitmap.Width,
@@ -712,6 +731,28 @@ namespace PracaInz04.Client.Pages
             ResetPanOffset();
             //ResetScale();
 
+            skiaView.Invalidate();
+        }
+
+        // original
+        public void FilterImage1(ImageProcessing.FilterType filterType)
+        {
+            int treshold = 128;
+            AddBitmap(ImageProc.FilterBitmap(sKBitmap, filterType));
+            skiaView.Invalidate();
+        }
+
+        public void FilterImage(ImageProcessing.FilterType filterType)
+        {
+            switch (filterType)
+            {
+                case ImageProcessing.FilterType.Grayscale:
+                    AddBitmap(ImageProc.FilterGrayscale(sKBitmap));
+                    break;
+                case ImageProcessing.FilterType.Binary:
+                    AddBitmap(ImageProc.FilterBinary(sKBitmap, treshold));
+                    break;
+            }
             skiaView.Invalidate();
         }
 
