@@ -16,7 +16,8 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public enum FilterType
 		{
 			Grayscale,
-			Binary
+			Binary,
+			Brightness
 		}
 
 		public IJSRuntime JS { get; set; }
@@ -166,18 +167,18 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return bitmapArray;
 		}
 
-		public SKBitmap FilterBitmap(SKBitmap bitmap, FilterType filterType, params object[] args)
-        {
-			switch(filterType)
-            {
-				case FilterType.Grayscale:
-					return FilterGrayscale(bitmap);
-				case FilterType.Binary:
-					return FilterBinary(bitmap, (int)args[0]);
-				default:
-					return bitmap;
-            }
-        }
+		//public SKBitmap FilterBitmap(SKBitmap bitmap, FilterType filterType, params object[] args)
+  //      {
+		//	switch(filterType)
+  //          {
+		//		case FilterType.Grayscale:
+		//			return FilterGrayscale(bitmap);
+		//		case FilterType.Binary:
+		//			return FilterBinary(bitmap, (int)args[0]);
+		//		default:
+		//			return bitmap;
+  //          }
+  //      }
 
 		public SKBitmap ApplyFilter(SKBitmap bitmap, SKColorFilter colorFilter)
         {
@@ -207,6 +208,14 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				GrayscaleMatrix()));
 		}
 
+		public SKBitmap FilterBrightness(SKBitmap bitmap, int level)
+		{
+			float[] result = BrightnessMatrix(level);
+			ShowMatrix(result);
+			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
+				result));
+		}
+
 		public float[] GrayscaleMatrix()
         {
 			float[] matrix = new float[]
@@ -217,6 +226,19 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				0,     0,     0,     1, 0
 			};
 			return matrix;
+		}
+
+		public float[] BrightnessMatrix(int level)
+		{
+			float level2 = (float)level / 255;
+			float[] offsetMatrix = new float[]
+			{
+				0, 0, 0, 0, level2,
+				0, 0, 0, 0, level2,
+				0, 0, 0, 0, level2,
+				0, 0, 0, 0, 0
+			};
+			return AddArrays(offsetMatrix, IdentityMatrix());
 		}
 
 		public byte[] BinaryTable(int treshold)
@@ -243,6 +265,28 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				0, 0, 1, 0, 0,
 				0, 0, 0, 1, 0
 			};
+		}
+
+		public float[] AddArrays(float[] a, float[] b)
+		{
+			return a.Zip(b, (x, y) => x + y).ToArray();
+		}
+
+		public void ShowMatrix(float[] a)
+		{
+			string s = "";
+			int counter = 1;
+            for (int i = 0; i < a.Length; i++)
+            {
+				s += $"{a[i]}, ";
+				if (counter == 5)
+				{ 
+					s += "\n";
+					counter = 0;
+				}
+				counter++;
+			}
+            Console.WriteLine(s);
 		}
 
 		//public SKBitmap FilterGrayscale1(SKBitmap bitmap)

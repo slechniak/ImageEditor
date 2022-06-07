@@ -1,0 +1,124 @@
+﻿@using static PracaInz04.Client.ImageProcessingClasses.ImageProcessing
+@inject StateService SService
+@inject ImageProcessing ImageProc
+
+<p class="lead m-2">Filters</p>
+<div class="input-group m-2 w-75">
+    <span class="input-group-text">Filter:</span>
+    @*<select @bind="filterType" class="form-select">*@
+    <select @onchange="OnFilterChosen" class="form-select">
+        @*<option value="null" disabled selected>Choose filter</option>*@
+        <option value="" selected>None</option>
+        @foreach(var fType in filterTypeList)
+        {
+            <option value=@fType>@fType</option>
+        }
+    </select>
+</div>
+
+@if(filterType == FilterType.Binary)
+{
+    <label for="customRange1" class="form-label pt-2 px-2">Treshold</label>
+    <input 
+        value="@treshold" @oninput="OnTresholdChange"
+        min="@minTreshold" max="@maxTreshold"
+        type="range" class="form-range m-2 w-50" id="customRange1">
+    <input 
+        value="@treshold" @onchange="OnTresholdChange"
+        type="number" class="form-control m-2 w-50" id="formControlInput1">
+}
+@if(filterType == FilterType.Brightness)
+{
+    <label for="customRange1" class="form-label pt-2 px-2">Level</label>
+    <input 
+        value="@level" @oninput="OnLevelChange"
+        min="@minLevel" max="@maxLevel"
+        type="range" class="form-range m-2 w-50" id="customRange2">
+    <input 
+        value="@level" @onchange="OnLevelChange"
+        type="number" class="form-control m-2 w-50" id="formControlInput2">
+}
+<button @onclick="ApplyFilter" class="btn btn-primary">Apply</button>
+
+@code {
+    [Parameter]
+    public EventCallback<SKBitmap> UpdateBitmap { get; set; }
+    [Parameter]
+    public EventCallback<SKBitmap> ShowBitmap { get; set; }
+    public Array filterTypeList;
+    public FilterType? filterType;
+    public int treshold = 128;
+    public int minTreshold = 0;
+    public int maxTreshold = 255;
+    public int level = 0;
+    public int minLevel = -255;
+    public int maxLevel = 255;
+    SKBitmap result;
+
+    public async Task ApplyFilter()
+    {
+        await FilterAndShow();
+        await UpdateBitmap.InvokeAsync(result);
+    }
+
+    public async Task FilterAndShow()
+    {
+        result = SService.bitmap;
+        SKColor color = result.GetPixel(0, 0);
+        Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        switch (filterType)
+        {
+            case ImageProcessing.FilterType.Grayscale:
+                result = ImageProc.FilterGrayscale(SService.bitmap);
+                break;
+            case ImageProcessing.FilterType.Binary:
+                result = ImageProc.FilterBinary(SService.bitmap, treshold);
+                break;
+            case ImageProcessing.FilterType.Brightness:
+                result = ImageProc.FilterBrightness(SService.bitmap, level);
+                break;
+        }
+        color = result.GetPixel(0, 0);
+        Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    protected override void OnInitialized()
+    {
+        result = SService.bitmap;
+        filterTypeList = Enum.GetValues(typeof(FilterType));
+    }
+
+    public async Task OnFilterChosen(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            if(Enum.TryParse((string)e.Value, out FilterType enumVal))
+            {
+                filterType = enumVal;
+                await FilterAndShow();
+            }
+            else
+            {
+                filterType = null;
+                await ShowBitmap.InvokeAsync(SService.bitmap);
+            }
+        }
+    }
+
+    private async Task OnTresholdChange(ChangeEventArgs e)
+    {
+        treshold = Convert.ToInt32(e.Value);
+        treshold = Math.Min(treshold, maxTreshold);
+        treshold = Math.Max(treshold, minTreshold);
+        await FilterAndShow();
+    }
+
+    private async Task OnLevelChange(ChangeEventArgs e)
+    {
+        level = Convert.ToInt32(e.Value);
+        level = Math.Min(level, maxLevel);
+        level = Math.Max(level, minLevel);
+        await FilterAndShow();
+    }
+}

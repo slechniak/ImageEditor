@@ -92,10 +92,27 @@ namespace PracaInz04.Client.Pages
         bool tiltAngleChanged = false;
         int scrollValueDefault = 5;
         int scrollValue = 5;
-        int treshold = 128;
+        //int treshold = 128;
+        bool collapse = true;
 
         private Dictionary<string, object> CanvasAttributes { get; set; }
         //new(){{ "width", "500" },{ "height", "500" }};
+
+        public void UpdateBitmap(SKBitmap bitmap)
+        {
+            AddBitmap(bitmap);
+        }
+
+        public void ShowBitmap(SKBitmap bitmap)
+        {
+            sKBitmap = bitmap;
+            skiaView.Invalidate();
+        }
+
+        public void ToggleCollapse()
+        {
+            collapse = !collapse;
+        }
 
         protected override async Task OnInitializedAsync()
         {
@@ -734,27 +751,27 @@ namespace PracaInz04.Client.Pages
             skiaView.Invalidate();
         }
 
-        // original
-        public void FilterImage1(ImageProcessing.FilterType filterType)
-        {
-            int treshold = 128;
-            AddBitmap(ImageProc.FilterBitmap(sKBitmap, filterType));
-            skiaView.Invalidate();
-        }
+        //// original
+        //public void FilterImage1(ImageProcessing.FilterType filterType)
+        //{
+        //    int treshold = 128;
+        //    AddBitmap(ImageProc.FilterBitmap(sKBitmap, filterType));
+        //    skiaView.Invalidate();
+        //}
 
-        public void FilterImage(ImageProcessing.FilterType filterType)
-        {
-            switch (filterType)
-            {
-                case ImageProcessing.FilterType.Grayscale:
-                    AddBitmap(ImageProc.FilterGrayscale(sKBitmap));
-                    break;
-                case ImageProcessing.FilterType.Binary:
-                    AddBitmap(ImageProc.FilterBinary(sKBitmap, treshold));
-                    break;
-            }
-            skiaView.Invalidate();
-        }
+        //public void FilterImage(ImageProcessing.FilterType filterType)
+        //{
+        //    switch (filterType)
+        //    {
+        //        case ImageProcessing.FilterType.Grayscale:
+        //            AddBitmap(ImageProc.FilterGrayscale(sKBitmap));
+        //            break;
+        //        case ImageProcessing.FilterType.Binary:
+        //            AddBitmap(ImageProc.FilterBinary(sKBitmap, treshold));
+        //            break;
+        //    }
+        //    skiaView.Invalidate();
+        //}
 
         // private void CropImage() private void CropImage() private void CropImage() 
 
@@ -895,6 +912,9 @@ namespace PracaInz04.Client.Pages
                     currentIndex = Math.Min(Math.Max(0, lastBitmaps.Count - 1), currentIndex);
 
                     sKBitmap = lastBitmaps[currentIndex];
+                    //s1
+                    SService.bitmap = sKBitmap;
+                    //e1
                     //Console.WriteLine($"currentIndex: {currentIndex}");
                     skiaView.Invalidate();
                 }
@@ -1229,6 +1249,9 @@ namespace PracaInz04.Client.Pages
 
         private void AddBitmap(SKBitmap bitmap)
         {
+            //s1
+            SService.bitmap = bitmap;
+            //e1
             sKBitmap = bitmap;
             //int imax = 5;
             if(currentIndex < lastBitmaps.Count - 1)
