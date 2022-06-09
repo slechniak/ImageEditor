@@ -29,7 +29,7 @@
 }
 @if(filterType == FilterType.Brightness)
 {
-    <label for="customRange1" class="form-label pt-2 px-2">Level</label>
+    <label for="customRange2" class="form-label pt-2 px-2">Level</label>
     <input 
         value="@level" @oninput="OnLevelChange"
         min="@minLevel" max="@maxLevel"
@@ -37,6 +37,17 @@
     <input 
         value="@level" @onchange="OnLevelChange"
         type="number" class="form-control m-2 w-50" id="formControlInput2">
+}
+@if(filterType == FilterType.Contrast)
+{
+    <label for="customRange3" class="form-label pt-2 px-2">Factor</label>
+    <input 
+        value="@factor" @oninput="OnFactorChange"
+        min="@minFactor" max="@maxFactor"
+        type="range" class="form-range m-2 w-50" id="customRange3">
+    <input 
+        value="@factor" @onchange="OnFactorChange"
+        type="number" class="form-control m-2 w-50" id="formControlInput3">
 }
 <button @onclick="ApplyFilter" class="btn btn-primary">Apply</button>
 
@@ -50,9 +61,15 @@
     public int treshold = 128;
     public int minTreshold = 0;
     public int maxTreshold = 255;
+
     public int level = 0;
     public int minLevel = -255;
     public int maxLevel = 255;
+
+    public int factor = 0;
+    //public int minFactor = 0;
+    public int minFactor = -255;
+    public int maxFactor = 255;
     SKBitmap result;
 
     public async Task ApplyFilter()
@@ -76,6 +93,9 @@
                 break;
             case ImageProcessing.FilterType.Brightness:
                 result = ImageProc.FilterBrightness(SService.bitmap, level);
+                break;
+            case ImageProcessing.FilterType.Contrast:
+                result = ImageProc.FilterContrast(SService.bitmap, factor);
                 break;
         }
         color = result.GetPixel(0, 0);
@@ -109,16 +129,27 @@
     private async Task OnTresholdChange(ChangeEventArgs e)
     {
         treshold = Convert.ToInt32(e.Value);
-        treshold = Math.Min(treshold, maxTreshold);
-        treshold = Math.Max(treshold, minTreshold);
+        //treshold = Math.Min(treshold, maxTreshold);
+        //treshold = Math.Max(treshold, minTreshold);
+        treshold = Math.Clamp(treshold, minTreshold, maxTreshold);
         await FilterAndShow();
     }
 
     private async Task OnLevelChange(ChangeEventArgs e)
     {
         level = Convert.ToInt32(e.Value);
-        level = Math.Min(level, maxLevel);
-        level = Math.Max(level, minLevel);
+        //level = Math.Min(level, maxLevel);
+        //level = Math.Max(level, minLevel);
+        level = Math.Clamp(level, minLevel, maxLevel);
+        await FilterAndShow();
+    }
+
+    private async Task OnFactorChange(ChangeEventArgs e)
+    {
+        factor = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        factor = Math.Clamp(factor, minFactor, maxFactor);
         await FilterAndShow();
     }
 }

@@ -14,7 +14,19 @@ namespace PracaInz04.Client.Services
     {
         public byte[] ImageArray { get; set; }
         public string ImageName { get; set; }
-        public SKBitmap bitmap { get; set; }
+        private SKBitmap _bitmap;
+        public SKBitmap bitmap 
+        {
+            get 
+            { 
+                return _bitmap;
+            }
+            set
+            {
+                _bitmap = value;
+                newHistogram = true;
+            }
+        }
 
         // old
         public int Count { get; set; }
@@ -25,6 +37,7 @@ namespace PracaInz04.Client.Services
         public byte[] imageArray { get; set; }
         public string imgUrl { get; set; } = string.Empty;
         //public Image imageResult { get; set; }
+        public bool newHistogram = false;
 
         public ILocalStorageService localStorage;
 
