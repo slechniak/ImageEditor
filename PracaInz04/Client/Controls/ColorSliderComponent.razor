@@ -1,0 +1,168 @@
+﻿@using static PracaInz04.Client.ImageProcessingClasses.ImageProcessing
+@inject StateService SService
+@inject ImageProcessing ImageProc
+
+<p class="lead m-2">Color sliders</p>
+
+<label for="customRange1" class="form-label m-0">Red</label>
+<div class="d-flex align-items-center justify-content-center mb-2">
+    <input 
+        value="@redShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.R)"
+        @onmouseup="ApplyFilter"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange1">
+    <input 
+        value="@redShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.R)"
+        type="number" class="form-control m-2 w-25" id="formControlInput1">
+</div>
+
+<label for="customRange2" class="form-label m-0">Green</label>
+<div class="d-flex align-items-center justify-content-center mb-2">
+    <input 
+        value="@greenShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.G)"
+        @onmouseup="ApplyFilter"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange2">
+    <input 
+        value="@greenShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.G)"
+        type="number" class="form-control m-2 w-25" id="formControlInput2">
+</div>
+
+<label for="customRange3" class="form-label m-0">Blue</label>
+<div class="d-flex align-items-center justify-content-center mb-2">
+    <input 
+        value="@blueShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.B)"
+        @onmouseup="ApplyFilter"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange3">
+    <input 
+        value="@blueShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.B)"
+        type="number" class="form-control m-2 w-25" id="formControlInput3">
+</div>
+
+<div class="container my-2">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isRed" id="flexCheckChecked3"
+            @onchange="() => ToggleColor(SKColorChannel.R)">
+        <label class="form-check-label" for="flexCheckChecked3">Red</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isGreen" id="flexCheckChecked2"
+            @onchange="() => ToggleColor(SKColorChannel.G)">
+        <label class="form-check-label" for="flexCheckChecked2">Green</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isBlue" id="flexCheckChecked1"
+            @onchange="() => ToggleColor(SKColorChannel.B)">
+        <label class="form-check-label" for="flexCheckChecked1">Blue</label>
+    </div>
+</div>
+<label for="customRange4" class="form-label m-0">Multi-color</label>
+<div class="d-flex align-items-center justify-content-center mb-2">
+    <input 
+        value="@blueShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.B)"
+        @onmouseup="ApplyFilter"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange4">
+    <input 
+        value="@blueShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.B)"
+        type="number" class="form-control m-2 w-25" id="formControlInput4">
+</div>
+
+@*<div class="d-flex align-items-center justify-content-evenly w-100">*@
+<div class="d-flex align-items-center justify-content-center my-2">
+    <button @onclick="ResetShifts" class="btn btn-primary mx-1">Reset values</button>
+    <button @onclick="ApplyFilter" class="btn btn-primary mx-1">Apply</button>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<SKBitmap> UpdateBitmap { get; set; }
+    [Parameter]
+    public EventCallback<SKBitmap> ShowBitmap { get; set; }
+
+    public int colorShift = 0;
+    public int minShift = -255;
+    public int maxShift = 255;
+    public int redShift = 0;
+    public int greenShift = 0;
+    public int blueShift = 0;
+    public bool isRed = false;
+    public bool isGreen = false;
+    public bool isBlue = false;
+    SKColorChannel colorChannel;
+    SKBitmap result;
+
+    public void ResetShifts()
+    {
+        redShift = 0;
+        greenShift = 0;
+        blueShift = 0;
+    }
+
+    public void ToggleColor(SKColorChannel channel)
+    {
+        switch(channel)
+        {
+            case SKColorChannel.R:
+                isRed = ! isRed;
+                break;
+            case SKColorChannel.G:
+                isGreen = ! isGreen;
+                break;
+            case SKColorChannel.B:
+                isBlue = ! isBlue;
+                break;
+        }
+    }
+
+    public async Task OnNumberChange(ChangeEventArgs e, SKColorChannel channel)
+    {
+        await OnShiftChange(e, channel); 
+        await ApplyFilter();
+    }
+
+    public async Task ApplyFilter()
+    {
+        await FilterAndShow();
+        await UpdateBitmap.InvokeAsync(result);
+    }
+
+    public async Task FilterAndShow()
+    {
+        result = SService.bitmap;
+        SKColor color = result.GetPixel(0, 0);
+        Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+
+        result = ImageProc.ChangeColor(SService.bitmap, colorShift, colorChannel);
+
+        color = result.GetPixel(0, 0);
+        Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    protected override void OnInitialized()
+    {
+        result = SService.bitmap;
+    }
+
+    private async Task OnShiftChange(ChangeEventArgs e, SKColorChannel channel)
+    {
+        colorShift = Convert.ToInt32(e.Value);
+        switch(channel)
+        {
+            case SKColorChannel.R:
+                redShift = colorShift;
+                break;
+            case SKColorChannel.G:
+                greenShift = colorShift;
+                break;
+            case SKColorChannel.B:
+                blueShift = colorShift;
+                break;
+        }
+        colorShift = Math.Clamp(colorShift, minShift, maxShift);
+        colorChannel = channel;
+        await FilterAndShow();
+    }
+}

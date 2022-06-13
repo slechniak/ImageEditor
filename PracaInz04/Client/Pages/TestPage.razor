@@ -39,11 +39,21 @@
                 </div>
             }
 		</div>
-		<div class="col-md-3 bg-info d-flex flex-column align-items-center">
+		<div class="col-md-3 bg-info d-flex flex-column overflow-auto mh-100 align-items-center">
 			@*<Tools2Component></Tools2Component>*@
             
-            <p class="lead m-2">@ImageName</p>
-            <button class="btn btn-primary m-2 w-50" @onclick="ToggleCollapse">Toggle</button>
+            <p class="fs-6 m-2">@ImageName</p>
+            <button class="btn btn-primary" @onclick="ReloadBitmap">Reload bitmap</button>
+            <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
+                    <button class="btn btn-primary" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
+                    <button class="btn btn-primary" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" value="@showPixels" id="flexCheckChecked" checked
+                    @onchange="OnChangeShowPixels">
+              <label class="form-check-label" for="flexCheckChecked">Show pixels</label>
+            </div>
+            <button class="btn btn-primary m-2 w-75" @onclick="ToggleCollapse">Toggle</button>
             @if(!collapse)
             {
                 <button class="btn btn-primary m-2 w-50" @onclick="ResetPanOffset">Center image</button>
@@ -82,6 +92,8 @@
                 @*<button class="btn btn-primary m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
             }
             <Filter2Component UpdateBitmap="UpdateBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
-		</div>
+            <ColorSliderComponent UpdateBitmap="UpdateBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>
+            <HistogramComponent></HistogramComponent>
+        </div>
 	</div>
 </div>

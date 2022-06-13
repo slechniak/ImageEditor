@@ -14,6 +14,7 @@ namespace PracaInz04.Client.Services
     {
         public byte[] ImageArray { get; set; }
         public string ImageName { get; set; }
+
         private SKBitmap _bitmap;
         public SKBitmap bitmap 
         {
@@ -27,6 +28,8 @@ namespace PracaInz04.Client.Services
                 newHistogram = true;
             }
         }
+
+        public SKBitmap originalBitmap { get; set; }
 
         // old
         public int Count { get; set; }

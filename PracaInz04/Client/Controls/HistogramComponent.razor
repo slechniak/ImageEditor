@@ -1,0 +1,41 @@
+﻿<div class="container-fluid p-0">
+	<SKCanvasView 
+        @ref="chartView"
+        OnPaintSurface="@OnPaintSurface"
+        IgnorePixelScaling="false"
+        class="border w-100"
+        style="aspect-ratio: 4/3"/>
+</div>
+
+
+@code {
+    SKCanvasView chartView;
+
+    private void OnPaintSurface(SKPaintSurfaceEventArgs e)
+    {
+        SKImageInfo info = e.Info;
+        SKSurface surface = e.Surface;
+        SKCanvas canvas = surface.Canvas;
+
+        canvas.Clear();
+
+        SKPaint linePaint = new SKPaint()
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 0.2f,
+            Color = SKColors.LightGray,
+            IsAntialias = true
+        };
+        //canvas.DrawLine(new SKPoint(0, 0), new SKPoint(info.Width, info.Height), linePaint);
+        float a = info.Width * 0.1f;
+        float b = info.Height * 0.9f;
+        canvas.DrawLine(new SKPoint(a, 0), new SKPoint(a, b), linePaint);
+        canvas.DrawLine(new SKPoint(a, b), new SKPoint(info.Width, b), linePaint);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        chartView.Invalidate();
+    }
+
+}

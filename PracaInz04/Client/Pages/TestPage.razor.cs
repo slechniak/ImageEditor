@@ -93,10 +93,25 @@ namespace PracaInz04.Client.Pages
         int scrollValueDefault = 5;
         int scrollValue = 5;
         //int treshold = 128;
-        bool collapse = true;
+        bool collapse = false;
+        bool showPixels = true;
+        SKBitmap bitmapUpscaled;
+        bool setUpscaledBitmap = false;
 
         private Dictionary<string, object> CanvasAttributes { get; set; }
         //new(){{ "width", "500" },{ "height", "500" }};
+
+        public void ReloadBitmap()
+        {
+            AddBitmap(SService.originalBitmap);
+            skiaView.Invalidate();
+        }
+
+        private void OnChangeShowPixels()
+        {
+            showPixels = !showPixels;
+            skiaView.Invalidate();
+        }
 
         public void UpdateBitmap(SKBitmap bitmap)
         {
@@ -106,6 +121,8 @@ namespace PracaInz04.Client.Pages
         public void ShowBitmap(SKBitmap bitmap)
         {
             sKBitmap = bitmap;
+            //SetUpscaledBitmap();
+            setUpscaledBitmap = true;
             skiaView.Invalidate();
         }
 
@@ -197,6 +214,22 @@ namespace PracaInz04.Client.Pages
             return surface2;
         }
 
+        private void SetUpscaledBitmap()
+        {
+            // new longer dimension in  pixels
+            float newSize = 800f;
+            if (Math.Max(sKBitmap.Width, sKBitmap.Height) < newSize)
+            {
+                float scaleX = newSize / Math.Max(sKBitmap.Width, sKBitmap.Height);
+                SKImageInfo infoX = new SKImageInfo((int)(sKBitmap.Width * scaleX),
+                                                    (int)(sKBitmap.Height * scaleX));
+                bitmapUpscaled = sKBitmap.Resize(infoX, SKFilterQuality.High);
+            }
+            else
+                bitmapUpscaled = sKBitmap;
+            setUpscaledBitmap = false;
+        }
+
         // private void OnPaintSurface(SKPaintSurfaceEventArgs e)
         private void OnPaintSurface(SKPaintSurfaceEventArgs e)
         {
@@ -225,6 +258,7 @@ namespace PracaInz04.Client.Pages
             SKPath unselected = new SKPath();
             unselected.AddRect(bitmapRect);
 
+            // draw bitmap
             // tilting - rotate view, tilt unselected path (bitmapRect)
             if (tilting)
             {
@@ -255,7 +289,22 @@ namespace PracaInz04.Client.Pages
             }
             else
             {
-                canvas.DrawBitmap(sKBitmap, bitmapRect);
+                //original - shows pixels
+                if(showPixels)
+                    canvas.DrawBitmap(sKBitmap, bitmapRect);
+                else
+                {
+                    // resampling / interpolation ??? v2
+                    if (setUpscaledBitmap)
+                        SetUpscaledBitmap();
+                    canvas.DrawBitmap(bitmapUpscaled, bitmapRect);
+                }
+
+                // resampling / interpolation ??? - doesnt work
+                //float scaleX = bitmapRect.Width / sKBitmap.Width;
+                //canvas.Translate(bitmapRect.Left, bitmapRect.Top);
+                //canvas.Scale(scaleX);
+                //canvas.DrawBitmap(sKBitmap, 0, 0);
             }
 
             // draw cross in the middle
@@ -637,6 +686,7 @@ namespace PracaInz04.Client.Pages
             if (ImageId != null)
             {
                 Console.WriteLine("SaveImage2 started");
+                SService.originalBitmap = sKBitmap;
                 await IDbManager.UpdateIDb2(sKBitmap, (int)ImageId, ImageName);
                 Console.WriteLine("SaveImage2 ended");
             }
@@ -886,7 +936,10 @@ namespace PracaInz04.Client.Pages
                 imageOriginal2 = await IDbManager.FetchImageOriginal2((int)ImageId);
                 if (imageOriginal2 != null)
                 {
-                    AddBitmap(SKBitmap.Decode(imageOriginal2.Array));
+                    //AddBitmap(SKBitmap.Decode(imageOriginal2.Array));
+                    sKBitmap = SKBitmap.Decode(imageOriginal2.Array);
+                    SService.originalBitmap = sKBitmap;
+                    AddBitmap(sKBitmap);
                     //testSrc2 = await ImageProc.GetImageURL(imageData.ImageArray);
                 }
             }
@@ -912,6 +965,8 @@ namespace PracaInz04.Client.Pages
                     currentIndex = Math.Min(Math.Max(0, lastBitmaps.Count - 1), currentIndex);
 
                     sKBitmap = lastBitmaps[currentIndex];
+                    //SetUpscaledBitmap();
+                    setUpscaledBitmap = true;
                     //s1
                     SService.bitmap = sKBitmap;
                     //e1
@@ -1253,8 +1308,10 @@ namespace PracaInz04.Client.Pages
             SService.bitmap = bitmap;
             //e1
             sKBitmap = bitmap;
+            //SetUpscaledBitmap();
+            setUpscaledBitmap = true;
             //int imax = 5;
-            if(currentIndex < lastBitmaps.Count - 1)
+            if (currentIndex < lastBitmaps.Count - 1)
             {
                 lastBitmaps.RemoveRange(currentIndex + 1, lastBitmaps.Count - currentIndex - 1);
                 lastBitmaps.Add(bitmap);

@@ -215,52 +215,24 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				result));
 		}
 
-		//original
-		//FilterContrast
-		public SKBitmap FilterContrast2(SKBitmap bitmap, int factor)
+		public SKBitmap ChangeColor(SKBitmap bitmap, int shift, SKColorChannel channel)
 		{
-			//byte[] table = ContrastTable(factor);
-			SKBitmap grayscaleBitmap = FilterGrayscale(bitmap);
-			byte[] table = ContrastTable(factor, grayscaleBitmap.Pixels);
-			ShowTable(table, "contrast table");
-			//SKBitmap grayscaleBitmap = FilterGrayscale(bitmap);
-			//return ApplyFilter(grayscaleBitmap, SKColorFilter.CreateTable(
-			//	null, table, table, table));
-			return ApplyFilter(grayscaleBitmap, SKColorFilter.CreateTable(
-				null, table, table, table));
+			//float[] result = BrightnessMatrix(level);
+			float[] result = ColorMatrix(shift, channel);
+			ShowMatrix(result);
+			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
+				result));
 		}
 
-		// hsl
-		public SKBitmap FilterContrast1(SKBitmap bitmap, int factor)
-		{
-			SKBitmap result = new SKBitmap(bitmap.Info);
-			SKColor[] pixels = bitmap.Pixels;
-			SKColor pixel;
-			float h, s, l, newL;
-			int pivot = 128, distance;
-			int gray;
-            for (int i = 0; i < pixels.Length; i++)
-            {
-				pixel = pixels[i];
-				pixel.ToHsl(out h, out s, out l);
-				//if(i % 10000 == 0)
-				//	Console.WriteLine($"pixels[{i}]: h: {h},s: {s}, l: {l}");
-                gray = (pixel.Red + pixel.Green + pixel.Blue) / 3;
-                distance = gray - pivot;
-				newL = Math.Clamp(l + distance * (float)factor / 100, 0, 100);
-				pixels[i] = SKColor.FromHsl(h, s, newL);
-                //if (i % 10000 == 0)
-                //    Console.WriteLine($"{l} + {distance} * (float){factor} / 100 = {l + distance * (float)factor / 100}");
-                //v = Math.Clamp( v + factor, 0, 255);
-            }
-			result.Pixels = pixels;
-			return result;
+		public SKBitmap FilterContrast(SKBitmap bitmap, int factor, bool inColor = true)
+        {
+			if (inColor)
+				return FilterContrastColor(bitmap, factor);
+			else
+				return FilterContrastGrayscale(bitmap, factor);
 		}
 
-		// works - latest (color)
-		// hsl 2
-		// FilterContrast3
-		public SKBitmap FilterContrast(SKBitmap bitmap, int factor)
+		public SKBitmap FilterContrastColor(SKBitmap bitmap, int factor)
 		{
 			SKBitmap result = new SKBitmap(bitmap.Info);
 			SKColor[] pixels = bitmap.Pixels;
@@ -272,7 +244,8 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				pixelsL = new float[pixels.Length];
 				for (int i = 0; i < pixels.Length; i++)
 				{
-					pixels[i].ToHsl(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
+					//pixels[i].ToHsl(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
+					pixels[i].ToHsv(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
 				}
 				minL = pixelsL.Min();
 				maxL = pixelsL.Max();
@@ -285,27 +258,26 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxL;
 			float newMin = minL - factor;
 			float newMax = maxL + factor;
-			Console.WriteLine($"factor: {factor}, newMin: {newMin}, newMax: {newMax}");
-			// dla ujemnych factor
+			Console.WriteLine($"oldMin: {oldMin}, oldMax: {oldMax}");
+			Console.WriteLine($"newMin: {newMin}, newMax: {newMax}, factor: {factor}");
+			// dla ujemnych wartosci factor
 			newMin = Math.Min(newMin, newMax);
 			newMax = Math.Max(newMax, newMin);
 			for (int i = 0; i < pixelsL.Length; i++)
 			{
 				oldL = pixelsL[i];
-				//newL = Math.Clamp((oldL - minL)/(maxL - minL)*100f, 0f, 100f);
 				newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
 				newL = Math.Clamp(newL, 0f, 100f);
-				pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
-                //if (i % 10000 == 0)
-                //    Console.WriteLine($"{l} + {distance} * (float){factor} / 100 = {l + distance * (float)factor / 100}");
+				//pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
+				pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
+				if (i % 10000 == 0)
+					Console.WriteLine($"oldL: {oldL}, newL: {newL}");
 			}
 			result.Pixels = pixels;
 			return result;
 		}
 
-		// works - latest (grayscale)
-		// FilterContrast
-		public SKBitmap FilterContrast3(SKBitmap bitmap, int factor)
+		public SKBitmap FilterContrastGrayscale(SKBitmap bitmap, int factor)
 		{
 			//bitmap2 = bitmap;
 			if (SService.newHistogram)
@@ -344,6 +316,20 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return AddArrays(offsetMatrix, IdentityMatrix());
 		}
 
+		public float[] ColorMatrix(int shift, SKColorChannel channel)
+		{
+			// fifth column needs values from 0-1, shift should be (-255)-255 
+			float shift2 = (float)shift / 255;
+			float[] shiftMatrix = new float[]
+			{
+				0, 0, 0, 0, channel == SKColorChannel.R ? shift2 : 0,
+				0, 0, 0, 0, channel == SKColorChannel.G ? shift2 : 0,
+				0, 0, 0, 0, channel == SKColorChannel.B ? shift2 : 0,
+				0, 0, 0, 0, 0
+			};
+			return AddArrays(shiftMatrix, IdentityMatrix());
+		}
+
 		public byte[] BinaryTable(int treshold)
 		{
 			byte[] table = new byte[256];
@@ -356,44 +342,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				table[i] = 255;
 			}
 
-			return table;
-		}
-
-		// original
-		public byte[] ContrastTable1(int factor)
-		{
-			byte[] table = new byte[256];
-			byte pivot = 128;
-			for (int i = 0; i < 256; i++)
-			{
-				table[i] = (byte)Math.Clamp(i + (i-pivot)*(float)factor/100, 0 ,255);
-			}
-			return table;
-		}
-		
-		// calculate histogram once
-		public byte[] ContrastTable(int factor, SKColor[] pixels)
-		{
-			byte[] histogram = GetHistogram(pixels, out byte min, out byte max);
-            Console.WriteLine($"min:{min}, max:{max}");
-			ShowTable(histogram, "histogram");
-			byte lower = (byte)factor;
-			byte upper = (byte)(255 - factor);
-			byte[] table = new byte[256];
-            for (int i = 0; i < lower; i++)
-            {
-				table[i] = 0;
-                //table[i] = (byte)i;
-            }
-			for (int i = lower; i <= upper; i++)
-			{
-				table[i] = (byte)Math.Clamp(255f*(i-lower)/(upper-lower), 0, 255);
-			}
-			for (int i = upper+1; i < 256; i++)
-			{
-				table[i] = 255;
-                //table[i] = (byte)i;
-            }
 			return table;
 		}
 
@@ -433,23 +381,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
-		//original
-		public byte[] GetHistogram(SKColor[] pixels, out byte min, out byte max)
-        {
-            byte[] histogram = new byte[256];
-			byte pixelValue;
-			min = 255;
-			max = 0;
-            for (int i = 0; i < pixels.Length; i++)
-            {
-				pixelValue = pixels[i].Red;
-				histogram[pixelValue] += 1;
-				min = Math.Min(min, pixelValue);
-				max = Math.Max(max, pixelValue);
-			}
-			return histogram;
-        }
-
 		public byte[] GetHistogram2(byte[] pixels)
 		{
 			byte[] histogram = new byte[256];
@@ -481,7 +412,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return a.Zip(b, (x, y) => x + y).ToArray();
 		}
 
-		public void ShowMatrix(float[] a)
+		public void ShowMatrix(float[] a, string title = "matrix title")
 		{
 			string s = "";
 			int counter = 1;
