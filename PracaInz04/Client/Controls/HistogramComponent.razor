@@ -1,41 +1,127 @@
-﻿<div class="container-fluid p-0">
-	<SKCanvasView 
-        @ref="chartView"
-        OnPaintSurface="@OnPaintSurface"
-        IgnorePixelScaling="false"
-        class="border w-100"
-        style="aspect-ratio: 4/3"/>
+﻿@using Radzen.Blazor
+
+<div class="w-100 border border-success ps-2 my-2">
+	<RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
+      <RadzenColumnSeries Data="@histogram" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count" Title="Red">
+          <TooltipTemplate Context="data">
+              <div>
+                Value: <strong>@data.Value</strong>
+                <br />
+                % of values: <strong>@Percent(data.Count)</strong>%
+              </div>
+          </TooltipTemplate>
+      </RadzenColumnSeries>
+  
+      <RadzenCategoryAxis Max="255" Step="50">
+      </RadzenCategoryAxis>
+  
+      <RadzenValueAxis Min="0" Step="@step" Formatter="@Percent">
+          <RadzenGridLines Visible="true"/>
+      </RadzenValueAxis>
+
+      <RadzenLegend Visible="false" />
+    </RadzenChart>
 </div>
 
-
 @code {
-    SKCanvasView chartView;
 
-    private void OnPaintSurface(SKPaintSurfaceEventArgs e)
+    //<RadzenValueAxis Min="0" Step="500" >
+    //<RadzenColumnSeries Data="@histogram" CategoryProperty="Value" ValueProperty="Count"
+    //  Title="Red" Stroke="rgba(0,0,0,1)" Fill="rgba(0,0,0,1)">
+    class HistogramItem
     {
-        SKImageInfo info = e.Info;
-        SKSurface surface = e.Surface;
-        SKCanvas canvas = surface.Canvas;
+        public byte Value { get; set; }
+        public int Count { get; set; }
+    }
 
-        canvas.Clear();
+    HistogramItem[] histogram;
+    int pixelsLength;
+    int step;
 
-        SKPaint linePaint = new SKPaint()
+    [Parameter]
+    public int[] HistogramArray { get; set; }        
+
+    private string Percent(int value)
+    {
+        //Console.WriteLine($"{value}, {pixelsLength}, {Math.Round((double)value / pixelsLength * 100)}");
+        return Math.Round((double)value / pixelsLength * 100, 2).ToString();
+    }
+
+    private string Percent(object value)
+    {
+        //Console.WriteLine($"{value}, {pixelsLength}, {Math.Round((double)value / pixelsLength * 100)}");
+        return Math.Round((double)value / pixelsLength * 100, 2).ToString();
+    }
+
+    private byte[] GetPixels(int width, int height)
+    {
+        Random rand = new Random();
+        byte[] pixels = new byte[width * height];
+        for (int i = 0; i < pixels.Length; i++)
         {
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 0.2f,
-            Color = SKColors.LightGray,
-            IsAntialias = true
-        };
-        //canvas.DrawLine(new SKPoint(0, 0), new SKPoint(info.Width, info.Height), linePaint);
-        float a = info.Width * 0.1f;
-        float b = info.Height * 0.9f;
-        canvas.DrawLine(new SKPoint(a, 0), new SKPoint(a, b), linePaint);
-        canvas.DrawLine(new SKPoint(a, b), new SKPoint(info.Width, b), linePaint);
+            // 0 - 255
+            //pixels[i] = (byte)rand.Next(256);
+            pixels[i] = NextGaussian(rand);
+        }
+        return pixels;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private HistogramItem[] GetHistogram(byte[] pixels)
     {
-        chartView.Invalidate();
+        HistogramItem[] resultH = new HistogramItem[256];
+
+        int[] array = new int[256];
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            array[pixels[i]]++;
+        }
+
+        //step = array.Max() / 4;
+
+        for (int i = 0; i < resultH.Length; i++)
+        {
+            resultH[i] = new HistogramItem
+            {
+                Value = (byte)i,
+                Count = array[i]
+                //Count = (int)Math.Round((float)array[i] / pixelsLength * 100)
+            };
+        }
+
+        return resultH;
     }
 
+    private void Gaussian()
+    {
+        Random rand = new Random(); //reuse this if you are generating many
+        double[] rands = new double[1000];
+        for (int i = 0; i < 1000; i++)
+        {
+            rands[i] = NextGaussian(rand);
+        }
+    }
+
+    private byte NextGaussian(Random rand)
+    {
+        double mean = 0;
+        double stdDev = 1;
+        double u1 = 1.0-rand.NextDouble(); //uniform(0,1] random doubles
+        double u2 = 1.0-rand.NextDouble();
+        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) *
+                        Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
+        double randNormal = mean + stdDev * randStdNormal; //random normal(mean,stdDev^2)
+        double max = -3.5 * stdDev;
+        double min = 3.5 * stdDev;
+        double result = (randNormal - min) / (max - min) * 255;
+        return (byte)Math.Clamp(result, 0, 255);
+    }
+
+    protected override void OnInitialized()
+    {
+        byte[] pixels = GetPixels(100, 200);
+        pixelsLength = pixels.Length;
+        histogram = GetHistogram(pixels);
+        step = histogram.Select(x => x.Count).Max() / 4;
+        //Gaussian();
+    }
 }

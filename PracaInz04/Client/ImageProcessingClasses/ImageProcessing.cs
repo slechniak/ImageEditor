@@ -27,7 +27,8 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public int LongerResized { get; set; } = 1000;
 
 		byte minValue, maxValue;
-		byte[] histogram;
+		//byte[] histogram;
+		int[] histogram;
 		SKBitmap bitmap2;
 		byte[] pixelValues;
 
@@ -286,7 +287,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
 			}
 			byte[] table = ContrastTable2(factor, pixelValues);
-			ShowTable(table, "contrast table");
+            ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
 		}
@@ -381,9 +382,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
-		public byte[] GetHistogram2(byte[] pixels)
+		public int[] GetHistogram2(byte[] pixels)
 		{
-			byte[] histogram = new byte[256];
+			int[] histogram = new int[256];
 			for (int i = 0; i < pixels.Length; i++)
 			{
 				histogram[pixels[i]] += 1;
@@ -429,7 +430,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
             Console.WriteLine(s);
 		}
 
-		public void ShowTable(byte[] a, string title)
+		public void ShowTable(int[] a, string title)
 		{
 			string s = $"{title}:\n";
 			for (int i = 0; i < a.Length; i+=1)
