@@ -1,4 +1,5 @@
 ﻿@using Radzen.Blazor
+@using System.Diagnostics
 @inject StateService SService
 @inject ImageProcessing ImageProc
 
@@ -27,7 +28,7 @@
         @if (isRed)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramR" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+                <RadzenColumnSeries Data="@histogramListR" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
                 Stroke="@colorRed" Fill="@colorRed">
                     <TooltipTemplate Context="data">
                         <div>
@@ -51,7 +52,7 @@
         @if (isGreen)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramG" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+                <RadzenColumnSeries Data="@histogramListG" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
                 Stroke="@colorGreen" Fill="@colorGreen">
                     <TooltipTemplate Context="data">
                         <div>
@@ -75,7 +76,7 @@
         @if (isBlue)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramB" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+                <RadzenColumnSeries Data="@histogramListB" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
                 Stroke="@colorBlue" Fill="@colorBlue">
                     <TooltipTemplate Context="data">
                         <div>
@@ -110,6 +111,9 @@
     HistogramItem[] histogramR;
     HistogramItem[] histogramG;
     HistogramItem[] histogramB;
+    List<HistogramItem> histogramListR;
+    List<HistogramItem> histogramListG;
+    List<HistogramItem> histogramListB;
     int pixelsLength;
     int step;
     bool dataIsSet = false;
@@ -137,31 +141,6 @@
         return Math.Round((double)value / pixelsLength * 100, 2).ToString();
     }
 
-    private HistogramItem[] GetHistogram(byte[] pixels)
-    {
-        HistogramItem[] resultH = new HistogramItem[256];
-
-        int[] array = new int[256];
-        for (int i = 0; i < pixels.Length; i++)
-        {
-            array[pixels[i]]++;
-        }
-
-        //step = array.Max() / 4;
-
-        for (int i = 0; i < resultH.Length; i++)
-        {
-            resultH[i] = new HistogramItem
-            {
-                Value = (byte)i,
-                Count = array[i]
-                //Count = (int)Math.Round((float)array[i] / pixelsLength * 100)
-            };
-        }
-
-        return resultH;
-    }
-
     private async Task RedrawHistogram()
     {
         if (isRed || isGreen || isBlue)
@@ -173,33 +152,152 @@
 
     private async Task SetData()
     {
+        Console.WriteLine("RedrawHistogram > SetData");
+
         int maxR = 1;
         int maxG = 1;
         int maxB = 1;
+
+        //Stopwatch stopwatch = new Stopwatch();
+        //stopwatch.Start();
+
         SKColor[] pixels = SService.bitmap.Pixels;
+        
+        //stopwatch.Stop();
+        //Console.WriteLine("pixels: {0} ms", stopwatch.ElapsedMilliseconds);
         if (isRed)
         {
-            byte[] pixelsR = pixels.Select(x => x.Red).ToArray();
-            histogramR = GetHistogram(pixelsR);
-            maxR = (int)Math.Ceiling(histogramR.Max(x => x.Count) / 4d);
+            //stopwatch.Reset();
+            //stopwatch.Start();
+            
+            //code
+            var pixelsListR = pixels.Select(x => x.Red);
+            
+            //stopwatch.Stop();
+            //Console.WriteLine("pixelsR2: {0} ms", stopwatch.ElapsedMilliseconds);
+            
+            //code
+            histogramListR = GetHistogram2(pixelsListR);
+
+            //stopwatch.Reset();
+            //stopwatch.Start();
+
+            //code
+            maxR = (int)Math.Ceiling(histogramListR.Max(x => x.Count) / 4d);
+            
+            //stopwatch.Stop();
+            //Console.WriteLine("maxR2: {0} ms", stopwatch.ElapsedMilliseconds);
         }
         if (isGreen)
         {
-            byte[] pixelsG = pixels.Select(x => x.Green).ToArray();
-            histogramG = GetHistogram(pixelsG);
-            maxG = (int)Math.Ceiling(histogramG.Max(x => x.Count) / 4d);
+            //byte[] pixelsG = pixels.Select(x => x.Green).ToArray();
+            //histogramG = GetHistogram(pixelsG);
+            //maxG = (int)Math.Ceiling(histogramG.Max(x => x.Count) / 4d);
+
+            var pixelsListG = pixels.Select(x => x.Green);
+            histogramListG = GetHistogram2(pixelsListG);
+            maxG = (int)Math.Ceiling(histogramListG.Max(x => x.Count) / 4d);
         }
         if (isBlue)
         {
-            byte[] pixelsB = pixels.Select(x => x.Blue).ToArray();
-            histogramB = GetHistogram(pixelsB);
-            maxB = (int)Math.Ceiling(histogramB.Max(x => x.Count) / 4d);
+            //byte[] pixelsB = pixels.Select(x => x.Blue).ToArray();
+            //histogramB = GetHistogram(pixelsB);
+            //maxB = (int)Math.Ceiling(histogramB.Max(x => x.Count) / 4d);
+
+            var pixelsListB = pixels.Select(x => x.Blue);
+            histogramListB = GetHistogram2(pixelsListB);
+            maxB = (int)Math.Ceiling(histogramListB.Max(x => x.Count) / 4d);
         }
         pixelsLength = pixels.Length;
         //step = histogram.Select(x => x.Count).Max() / 4;
         //step = histogram.Max(x => x.Count) / 4;
         step = new List<int>{ maxR, maxG, maxB }.Max();
         dataIsSet = true;
+    }
+
+    private HistogramItem[] GetHistogram(byte[] pixels)
+    {
+        HistogramItem[] resultH = new HistogramItem[256];
+
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+        int[] array = new int[256];
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            array[pixels[i]]++;
+        }
+        stopwatch.Stop();
+        Console.WriteLine("array: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        //step = array.Max() / 4;
+
+        stopwatch.Reset();
+        stopwatch.Start();
+        for (int i = 0; i < resultH.Length; i++)
+        {
+            resultH[i] = new HistogramItem
+                    {
+                        Value = (byte)i,
+                        Count = array[i]
+                        //Count = (int)Math.Round((float)array[i] / pixelsLength * 100)
+                    };
+        }
+        stopwatch.Stop();
+        Console.WriteLine("resultH: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        return resultH;
+    }
+
+    private List<HistogramItem> GetHistogram2(IEnumerable<byte> pixels)
+    {
+        List<HistogramItem> resultH = new List<HistogramItem>();
+        List<byte> pixelsList = pixels.ToList();
+
+        //Stopwatch stopwatch = new Stopwatch();
+        //stopwatch.Start();
+        
+        int[] array = new int[256];
+        // fastest - around 110ms for cat01 500.jpg red
+        foreach(var pixel in pixelsList)
+        {
+            array[pixel]++;
+        }
+
+        // fast - around 210ms for cat01 500.jpg red (IEnumerable<byte> pixels)
+        //foreach(var pixel in pixels)
+        //{
+        //    array[pixel]++;
+        //}
+
+        // VERY slow, both
+        //for (int i = 0; i < pixels.Count(); i++)
+        //{
+        //    Console.WriteLine(i);
+        //    array[pixels.ElementAt(i)]++;
+        //    array[pixelsList[i]]++;
+        //}
+
+        //stopwatch.Stop();
+        //Console.WriteLine("array2: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        //step = array.Max() / 4;
+
+        //stopwatch.Reset();
+        //stopwatch.Start();
+
+        for (int i = 0; i < array.Length; i++)
+        {
+            resultH.Add( new HistogramItem
+            {
+                Value = (byte)i,
+                Count = array[i]
+            });
+        }
+
+        //stopwatch.Stop();
+        //Console.WriteLine("resultH2: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        return resultH;
     }
 
     public async Task ToggleColor(SKColorChannel channel)
