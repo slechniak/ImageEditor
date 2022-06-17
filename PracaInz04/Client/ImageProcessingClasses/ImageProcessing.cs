@@ -61,7 +61,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				image.Mutate(x => x.AutoOrient());
 				//int height = (image.Height * width) / image.Width;
 				//image.Mutate(x => x.Resize(width, height).AutoOrient());
-				Console.WriteLine($"{image.Width} -> {width}");
+				//Console.WriteLine($"{image.Width} -> {width}");
 				image.Mutate(x => x.Resize(width, 0));
 				using (var ms = new MemoryStream())
 				{
@@ -107,12 +107,12 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				}
 				var resultInfo = new SKImageInfo(resizedWidth, resizedHeight);
 				SKBitmap resultBitmap = sourceBitmap.Resize(resultInfo, SKFilterQuality.High);
-				Console.WriteLine($"ResizeSkiaCommon resized w, h: {resultBitmap.Width}, {resultBitmap.Height}");
+				//Console.WriteLine($"ResizeSkiaCommon resized w, h: {resultBitmap.Width}, {resultBitmap.Height}");
 				return SKBitmapToArray(resultBitmap);
 			}
 			else
 			{
-				Console.WriteLine($"ResizeSkiaCommon NOT resized w, h: {sourceBitmap.Width}, {sourceBitmap.Height}");
+				//Console.WriteLine($"ResizeSkiaCommon NOT resized w, h: {sourceBitmap.Width}, {sourceBitmap.Height}");
 				return SKBitmapToArray(sourceBitmap); 
 			}
 		}
@@ -120,7 +120,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public SKBitmap ResizeSKBitmap(SKBitmap bitmap, int? width = null, int? height = null)
 		{
 			var resultInfo = GetResizedImageInfo(bitmap, width, height);
-			Console.WriteLine($"resultInfo: w: {resultInfo.Width}, h: {resultInfo.Height}");
+			//Console.WriteLine($"resultInfo: w: {resultInfo.Width}, h: {resultInfo.Height}");
 			SKBitmap resultBitmap = bitmap.Resize(resultInfo, SKFilterQuality.High);
 			return resultBitmap;
 		}
@@ -254,9 +254,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				pixelsL = new float[pixels.Length];
 				for (int i = 0; i < pixels.Length; i++)
 				{
-					//pixels[i].ToHsl(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
-					pixels[i].ToHsv(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
-				}
+					pixels[i].ToHsl(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
+                    //pixels[i].ToHsv(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
+                }
 				minL = pixelsL.Min();
 				maxL = pixelsL.Max();
 				//Console.WriteLine($"minL: {minL}, maxL: {maxL}");
@@ -281,11 +281,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
 				newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + offset;
 				newL = Math.Clamp(newL, 0f, 100f);
-				//pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
-				pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
-				//if (i % 10000 == 0)
-				//	Console.WriteLine($"oldL: {oldL}, newL: {newL}");
-			}
+				pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
+                //pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
+                //if (i % 10000 == 0)
+                //	Console.WriteLine($"oldL: {oldL}, newL: {newL}");
+            }
 			result.Pixels = pixels;
 			return result;
 		}

@@ -54,6 +54,8 @@
     public int OriginalWidth { get; set; }
     [Parameter] 
     public int OriginalHeight { get; set; }
+    [Parameter] 
+    public SKBitmap bitmap { get; set; }
     private Size size = new();
 
     protected override void OnInitialized()
@@ -119,7 +121,8 @@
 
     private void SizeChanged(int? width, int? height)
     {
-        SKImageInfo info = ImgProc.GetResizedImageInfo(SService.bitmap, width, height);
+        //SKImageInfo info = ImgProc.GetResizedImageInfo(SService.bitmap, width, height);
+        SKImageInfo info = ImgProc.GetResizedImageInfo(bitmap, width, height);
         //size.Width = info.Width == 0 ? null : info.Width;
         //size.Height = info.Height == 0 ? null : info.Height;
         size.Width = info.Width;
@@ -133,8 +136,12 @@
         if (size.Width > 0 && size.Height > 0)
         {
             Console.WriteLine("resize");
-            SService.bitmap = ImgProc.ResizeSKBitmap(SService.bitmap, size.Width, size.Height);
-            ModalInstance.CloseAsync();
+            //SService.bitmap = ImgProc.ResizeSKBitmap(SService.bitmap, size.Width, size.Height);
+            SKBitmap resizedBitmap = ImgProc.ResizeSKBitmap(bitmap, size.Width, size.Height);
+            //ModalInstance.CloseAsync();
+            //ModalInstance.CloseAsync(ModalResult.Ok<SKBitmap>(SService.bitmap));
+            ModalInstance.CloseAsync(ModalResult.Ok<SKBitmap>(resizedBitmap));
+
             //await ModalInstance.CancelAsync();
             //ModalInstance.CloseAsync(ModalResult.Ok(true));
         }

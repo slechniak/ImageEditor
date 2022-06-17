@@ -553,7 +553,7 @@ namespace PracaInz04.Client.Pages
                     SetSelectionStart(scaledCoordX, scaledCoordY);
                     SetSelectionOffset();
                 }
-                Console.WriteLine($"OnMouseDown: moveSelectY : {moveSelectY}, moveSelectX : {moveSelectX}");
+                //Console.WriteLine($"OnMouseDown: moveSelectY : {moveSelectY}, moveSelectX : {moveSelectX}");
                 //e2
                 //s1
                 //distance = Distance(selectRect.Right, selectRect.Bottom,
@@ -685,17 +685,19 @@ namespace PracaInz04.Client.Pages
         {
             if (ImageId != null)
             {
-                Console.WriteLine("SaveImage2 started");
+                //Console.WriteLine("SaveImage2 started");
                 SService.originalBitmap = sKBitmap;
                 await IDbManager.UpdateIDb2(sKBitmap, (int)ImageId, ImageName);
-                Console.WriteLine("SaveImage2 ended");
+                //Console.WriteLine("SaveImage2 ended");
             }
         }
 
         private void ModalShowDownloadComponent()
         {
-            SService.bitmap = sKBitmap;
-            Modal.Show<DownloadComponent>("Download image");
+            var parameters = new ModalParameters();
+            parameters.Add("passedBitmap", sKBitmap);
+            //SService.bitmap = sKBitmap;
+            Modal.Show<DownloadComponent>("Download image", parameters);
         }
 
         private async Task ModalShowResizeComponent()
@@ -703,8 +705,9 @@ namespace PracaInz04.Client.Pages
             var parameters = new ModalParameters();
             parameters.Add("OriginalWidth", sKBitmap.Width);
             parameters.Add("OriginalHeight", sKBitmap.Height);
+            parameters.Add("bitmap", sKBitmap);
 
-            SService.bitmap = sKBitmap;
+            //SService.bitmap = sKBitmap;
             var formModal = Modal.Show<ResizeComponent>("Resize image", parameters);
             var result = await formModal.Result;
 
@@ -715,30 +718,13 @@ namespace PracaInz04.Client.Pages
             else
             {
                 Console.WriteLine("Modal was accepted (resize)");
-                AddBitmap(SService.bitmap);
+                //AddBitmap(SService.bitmap);
+                AddBitmap((SKBitmap)result.Data);
                 skiaView.Invalidate();
             }
             //Modal.Show<ResizeComponent>("Resize image");
             //sKBitmap = SService.bitmap;
             //skiaView.Invalidate();
-        }
-
-        private async Task ModalShowFilterComponent()
-        {
-            SService.bitmap = sKBitmap;
-            var formModal = Modal.Show<FilterComponent>("Filter image");
-            var result = await formModal.Result;
-
-            if (result.Cancelled)
-            {
-                Console.WriteLine("Modal was cancelled");
-            }
-            else
-            {
-                Console.WriteLine("Modal was accepted (filter)");
-                AddBitmap(SService.bitmap);
-                skiaView.Invalidate();
-            }
         }
 
         private void SetBitmapRect(SKImageInfo info)

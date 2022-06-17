@@ -51,6 +51,8 @@
     public static List<string> formats = new() { "png", "jpeg", "webp", "bmp", "gif", "tiff"};
     [Parameter] 
     public int? ImageId { get; set; }
+    [Parameter] 
+    public SKBitmap passedBitmap { get; set; }
 
     private async Task DownloadImage()
     {
@@ -74,53 +76,59 @@
     private async Task<Stream> GetFileStream()
     {
         byte[] bitmapArray = {};
+        //SKBitmap bitmap = SService.bitmap;
+        SKBitmap bitmap = passedBitmap;
         if (ImageId != null)
-            SService.bitmap = SKBitmap.Decode((await IDbManager.FetchImageOriginal2((int)ImageId)).Array);
-        bitmapArray = SKBitmapToArrayAnyFormat();
+            bitmap = SKBitmap.Decode((await IDbManager.FetchImageOriginal2((int)ImageId)).Array);
+        //SService.bitmap = SKBitmap.Decode((await IDbManager.FetchImageOriginal2((int)ImageId)).Array);
+        //int bitmapLength = bitmap.Width * bitmap.Height;
+        bitmapArray = SKBitmapToArrayAnyFormat(bitmap);
         var fileStream = new MemoryStream(bitmapArray);
 
         return fileStream;
     }
 
-    private byte[] SKBitmapToArrayAnyFormat()
+    private byte[] SKBitmapToArrayAnyFormat(SKBitmap bitmap)
     {
         var resultArray = new byte[]{ };
 
         switch(filename.Format)
         {
             case "png":
-                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Png);
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Png, bitmap);
                 break;
             case "jpeg":
-                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Jpeg);
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Jpeg, bitmap);
                 break;
             case "webp":
-                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Webp);
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Webp, bitmap);
                 break;
             case "bmp":
-                resultArray = EncodeImageSharp(new BmpEncoder() {});
+                resultArray = EncodeImageSharp(new BmpEncoder() {}, bitmap);
                 break;
             case "gif":
-                resultArray = EncodeImageSharp(new GifEncoder() {});
+                resultArray = EncodeImageSharp(new GifEncoder() {}, bitmap);
                 break;
             case "tiff":
-                resultArray = EncodeImageSharp(new TiffEncoder() {});
+                resultArray = EncodeImageSharp(new TiffEncoder() {}, bitmap);
                 break;
         }
 
         return resultArray;
     }
 
-    private byte[] EncodeSkiaSharp(SKEncodedImageFormat skImageFormat)
+    private byte[] EncodeSkiaSharp(SKEncodedImageFormat skImageFormat, SKBitmap bitmap)
     {
-        var skData = SService.bitmap.Encode(skImageFormat, 100);
+        //var skData = SService.bitmap.Encode(skImageFormat, 100);
+        //int bitmapLength = bitmap.Width * bitmap.Height;
+        var skData = bitmap.Encode(skImageFormat, 100);
         var bitmapArray = skData.ToArray();
         return bitmapArray;
     }
 
-    private byte[] EncodeImageSharp(IImageEncoder encoder)
+    private byte[] EncodeImageSharp(IImageEncoder encoder, SKBitmap bitmap)
     {
-        var bitmapArray = EncodeSkiaSharp(SKEncodedImageFormat.Png);
+        var bitmapArray = EncodeSkiaSharp(SKEncodedImageFormat.Png, bitmap);
         var resultArray = new byte[]{ };
         using (Image image = Image.Load(bitmapArray))
         {
