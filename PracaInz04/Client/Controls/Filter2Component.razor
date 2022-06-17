@@ -2,7 +2,7 @@
 @inject StateService SService
 @inject ImageProcessing ImageProc
 
-<p class="lead m-2">Filters</p>
+<p class="fs-6 fw-bold m-2">Filters</p>
 <div class="input-group m-2 w-75">
     <span class="input-group-text">Filter:</span>
     @*<select @bind="filterType" class="form-select">*@
@@ -173,7 +173,7 @@
             minFactor = -255;
             maxFactor = 255;
         }
-        SService.newHistogram = true;
+        SService.newBitmap = true;
         factor = 0;
         //StateHasChanged();
         await FilterAndShow();

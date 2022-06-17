@@ -225,6 +225,15 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				result));
 		}
 
+		public SKBitmap ChangeColorMulti(SKBitmap bitmap, int shift, bool isRed, bool isGreen, bool isBlue)
+		{
+			//float[] result = BrightnessMatrix(level);
+			float[] result = ColorMatrixMulti(shift, isRed, isGreen, isBlue);
+			ShowMatrix(result);
+			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
+				result));
+		}
+
 		public SKBitmap FilterContrast(SKBitmap bitmap, int factor, bool inColor = true)
         {
 			if (inColor)
@@ -237,7 +246,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		{
 			SKBitmap result = new SKBitmap(bitmap.Info);
 			SKColor[] pixels = bitmap.Pixels;
-			if (SService.newHistogram)
+			if (SService.newBitmap)
 			{
 				//SKColor[] pixels = bitmap.Pixels;
 				pixelsH = new float[pixels.Length];
@@ -250,8 +259,8 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				}
 				minL = pixelsL.Min();
 				maxL = pixelsL.Max();
-				Console.WriteLine($"minL: {minL}, maxL: {maxL}");
-				SService.newHistogram = false;
+				//Console.WriteLine($"minL: {minL}, maxL: {maxL}");
+				SService.newBitmap = false;
 			}
 			float oldL, newL;
 
@@ -259,20 +268,23 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxL;
 			float newMin = minL - factor;
 			float newMax = maxL + factor;
-			Console.WriteLine($"oldMin: {oldMin}, oldMax: {oldMax}");
-			Console.WriteLine($"newMin: {newMin}, newMax: {newMax}, factor: {factor}");
+			//Console.WriteLine($"oldMin: {oldMin}, oldMax: {oldMax}");
+			//Console.WriteLine($"newMin: {newMin}, newMax: {newMax}, factor: {factor}");
 			// dla ujemnych wartosci factor
 			newMin = Math.Min(newMin, newMax);
 			newMax = Math.Max(newMax, newMin);
+			float newRange = newMax - newMin;
+			float offset = (100 - newRange) / 2f;
 			for (int i = 0; i < pixelsL.Length; i++)
 			{
 				oldL = pixelsL[i];
-				newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + offset;
 				newL = Math.Clamp(newL, 0f, 100f);
 				//pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
 				pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
-				if (i % 10000 == 0)
-					Console.WriteLine($"oldL: {oldL}, newL: {newL}");
+				//if (i % 10000 == 0)
+				//	Console.WriteLine($"oldL: {oldL}, newL: {newL}");
 			}
 			result.Pixels = pixels;
 			return result;
@@ -281,13 +293,13 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public SKBitmap FilterContrastGrayscale(SKBitmap bitmap, int factor)
 		{
 			//bitmap2 = bitmap;
-			if (SService.newHistogram)
+			if (SService.newBitmap)
 			{
 				bitmap2 = FilterGrayscale(bitmap);
 				pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
 			}
 			byte[] table = ContrastTable2(factor, pixelValues);
-            ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
+            //ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
 		}
@@ -331,6 +343,20 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return AddArrays(shiftMatrix, IdentityMatrix());
 		}
 
+		public float[] ColorMatrixMulti(int shift, bool isRed, bool isGreen, bool isBlue)
+		{
+			// fifth column needs values from 0-1, shift should be (-255)-255 
+			float shift2 = (float)shift / 255;
+			float[] shiftMatrix = new float[]
+			{
+				0, 0, 0, 0, isRed ? shift2 : 0,
+				0, 0, 0, 0, isGreen ? shift2 : 0,
+				0, 0, 0, 0, isBlue ? shift2 : 0,
+				0, 0, 0, 0, 0
+			};
+			return AddArrays(shiftMatrix, IdentityMatrix());
+		}
+
 		public byte[] BinaryTable(int treshold)
 		{
 			byte[] table = new byte[256];
@@ -348,14 +374,14 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public byte[] ContrastTable2(int factor, byte[] pixels)
 		{
-			if (SService.newHistogram)
+			if (SService.newBitmap)
 			{
 				minValue = pixels.Min();
 				maxValue = pixels.Max();
-				histogram = GetHistogram2(pixels);
-				SService.newHistogram = false;
-				Console.WriteLine($"min:{minValue}, max:{maxValue}");
-				ShowTable(histogram, "histogram");
+				//histogram = GetHistogram2(pixels);
+				SService.newBitmap = false;
+				//Console.WriteLine($"min:{minValue}, max:{maxValue}");
+				//ShowTable(histogram, "histogram");
 			}
 			//byte lower = (byte)(minValue - factor);
 			//byte upper = (byte)(maxValue + factor);
@@ -369,13 +395,20 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxValue;
 			float newMin = minValue - factor;
 			float newMax = maxValue + factor;
+			// dla ujemnych wartosci factor
+			newMin = Math.Min(newMin, newMax);
+			newMax = Math.Max(newMax, newMin);
+			float newRange = newMax - newMin;
+			float offset = (255 - newRange) / 2f;
 			// dla ujemnych factor
 			newMin = Math.Min(newMin, newMax);
 			newMax = Math.Max(newMax, newMin);
+			
 
 			for (int i = (int)oldMin; i <= oldMax; i++)
 			{
-				float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				float newValue = ((i - oldMin) / (oldMax - oldMin)) * newRange + offset;
 				table[i] = (byte)Math.Clamp(newValue, 0, 255);
 			}
 			

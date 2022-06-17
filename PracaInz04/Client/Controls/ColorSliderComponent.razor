@@ -2,13 +2,12 @@
 @inject StateService SService
 @inject ImageProcessing ImageProc
 
-<p class="lead m-2">Color sliders</p>
+<p class="fs-6 fw-bold m-2">Color sliders</p>
 
 <label for="customRange1" class="form-label m-0">Red</label>
 <div class="d-flex align-items-center justify-content-center mb-2">
     <input 
         value="@redShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.R)"
-        @onmouseup="ApplyFilter"
         min="@minShift" max="@maxShift"
         type="range" class="form-range m-2 w-50" id="customRange1">
     <input 
@@ -20,7 +19,6 @@
 <div class="d-flex align-items-center justify-content-center mb-2">
     <input 
         value="@greenShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.G)"
-        @onmouseup="ApplyFilter"
         min="@minShift" max="@maxShift"
         type="range" class="form-range m-2 w-50" id="customRange2">
     <input 
@@ -32,13 +30,20 @@
 <div class="d-flex align-items-center justify-content-center mb-2">
     <input 
         value="@blueShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.B)"
-        @onmouseup="ApplyFilter"
         min="@minShift" max="@maxShift"
         type="range" class="form-range m-2 w-50" id="customRange3">
     <input 
         value="@blueShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.B)"
         type="number" class="form-control m-2 w-25" id="formControlInput3">
 </div>
+
+@*<input 
+        value="@redShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.R)"
+        @onmouseup="ApplyFilter"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange1">*@
+
+@*multi color*@
 
 <div class="container my-2">
     <div class="form-check form-check-inline">
@@ -57,15 +62,15 @@
         <label class="form-check-label" for="flexCheckChecked1">Blue</label>
     </div>
 </div>
+
 <label for="customRange4" class="form-label m-0">Multi-color</label>
 <div class="d-flex align-items-center justify-content-center mb-2">
     <input 
-        value="@blueShift" @oninput="(e) => OnShiftChange(e, SKColorChannel.B)"
-        @onmouseup="ApplyFilter"
+        value="@multiShift" @oninput="(e) => OnMultiShiftChange(e)"
         min="@minShift" max="@maxShift"
         type="range" class="form-range m-2 w-50" id="customRange4">
     <input 
-        value="@blueShift" @onchange="(e) => OnNumberChange(e, SKColorChannel.B)"
+        value="@multiShift" @onchange="(e) => OnMultiNumberChange(e)"
         type="number" class="form-control m-2 w-25" id="formControlInput4">
 </div>
 
@@ -87,6 +92,7 @@
     public int redShift = 0;
     public int greenShift = 0;
     public int blueShift = 0;
+    public int multiShift = 0;
     public bool isRed = false;
     public bool isGreen = false;
     public bool isBlue = false;
@@ -116,34 +122,50 @@
         }
     }
 
-    public async Task OnNumberChange(ChangeEventArgs e, SKColorChannel channel)
-    {
-        await OnShiftChange(e, channel); 
-        await ApplyFilter();
-    }
-
     public async Task ApplyFilter()
     {
-        await FilterAndShow();
+        if(isRed || isGreen || isBlue)
+            await FilterAndShowMulti();
+        else
+            await FilterAndShow();
         await UpdateBitmap.InvokeAsync(result);
     }
 
     public async Task FilterAndShow()
     {
         result = SService.bitmap;
-        SKColor color = result.GetPixel(0, 0);
-        Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        //SKColor color = result.GetPixel(0, 0);
+        //Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
 
         result = ImageProc.ChangeColor(SService.bitmap, colorShift, colorChannel);
 
-        color = result.GetPixel(0, 0);
-        Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        //color = result.GetPixel(0, 0);
+        //Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    public async Task FilterAndShowMulti()
+    {
+        result = SService.bitmap;
+        result = ImageProc.ChangeColorMulti(SService.bitmap, colorShift, isRed, isGreen, isBlue);
         await ShowBitmap.InvokeAsync(result);
     }
 
     protected override void OnInitialized()
     {
         result = SService.bitmap;
+    }
+
+    public async Task OnNumberChange(ChangeEventArgs e, SKColorChannel channel)
+    {
+        await OnShiftChange(e, channel); 
+        //await ApplyFilter();
+    }
+
+    public async Task OnMultiNumberChange(ChangeEventArgs e)
+    {
+        await OnMultiShiftChange(e); 
+        //await ApplyFilter();
     }
 
     private async Task OnShiftChange(ChangeEventArgs e, SKColorChannel channel)
@@ -164,5 +186,29 @@
         colorShift = Math.Clamp(colorShift, minShift, maxShift);
         colorChannel = channel;
         await FilterAndShow();
+    }
+
+    private async Task OnMultiShiftChange(ChangeEventArgs e)
+    {
+        colorShift = Convert.ToInt32(e.Value);
+        colorShift = Math.Clamp(colorShift, minShift, maxShift);
+        multiShift = colorShift;
+
+        await FilterAndShowMulti();
+        //if (isRed)
+        //{
+        //    colorChannel = SKColorChannel.R;
+        //    await FilterAndShow();
+        //}
+        //if (isGreen)
+        //{
+        //    colorChannel = SKColorChannel.G;
+        //    await FilterAndShow();
+        //}
+        //if (isBlue)
+        //{
+        //    colorChannel = SKColorChannel.B;
+        //    await FilterAndShow();
+        //}
     }
 }

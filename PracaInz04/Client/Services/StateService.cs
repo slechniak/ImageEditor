@@ -25,7 +25,8 @@ namespace PracaInz04.Client.Services
             set
             {
                 _bitmap = value;
-                newHistogram = true;
+                newBitmap = true;
+                RedrawHistogram?.Invoke();
             }
         }
 
@@ -40,11 +41,14 @@ namespace PracaInz04.Client.Services
         public byte[] imageArray { get; set; }
         public string imgUrl { get; set; } = string.Empty;
         //public Image imageResult { get; set; }
-        public bool newHistogram = false;
+        public bool newBitmap = false;
 
         public ILocalStorageService localStorage;
 
         public event Action OnChange;
+
+        public event Func<Task> RedrawHistogram;
+        //public event Action RedrawHistogram;
 
         public StateService(ILocalStorageService ls)
         {
