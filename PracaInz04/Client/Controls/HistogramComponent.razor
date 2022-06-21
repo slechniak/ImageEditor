@@ -27,14 +27,15 @@
     <div class="w-100 border border-success ps-2 my-2">
         @if (isRed)
         {
-            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramListR" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListR" CategoryProperty="Value"  StrokeWidth="@strokeWidth" ValueProperty="Count"
                 Stroke="@colorRed" Fill="@colorRed">
                     <TooltipTemplate Context="data">
                         <div>
                             Value: <strong>@data.Value</strong>
                             <br />
                             % of red: <strong>@Percent(data.Count)</strong>%
+                            <br />
                         </div>
                     </TooltipTemplate>
                 </RadzenColumnSeries>
@@ -42,7 +43,7 @@
                 <RadzenCategoryAxis Max="255" Step="50">
                 </RadzenCategoryAxis>
 
-                <RadzenValueAxis Min="0" Step="@step" Formatter="@Percent">
+                <RadzenValueAxis Min="0" Max="@maxR" Step="@stepR" Formatter="@Percent">
                     <RadzenGridLines Visible="true"/>
                 </RadzenValueAxis>
 
@@ -51,8 +52,8 @@
         }
         @if (isGreen)
         {
-            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramListG" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListG" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
                 Stroke="@colorGreen" Fill="@colorGreen">
                     <TooltipTemplate Context="data">
                         <div>
@@ -66,7 +67,7 @@
                 <RadzenCategoryAxis Max="255" Step="50">
                 </RadzenCategoryAxis>
 
-                <RadzenValueAxis Min="0" Step="@step" Formatter="@Percent">
+                <RadzenValueAxis Min="0" Max="@maxG" Step="@stepG" Formatter="@Percent">
                     <RadzenGridLines Visible="true"/>
                 </RadzenValueAxis>
 
@@ -75,8 +76,8 @@
         }
         @if (isBlue)
         {
-            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style="width: 100%; aspect-ratio: 16/9; height: auto;">
-                <RadzenColumnSeries Data="@histogramListB" CategoryProperty="Value" StrokeWidth="1" ValueProperty="Count"
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListB" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
                 Stroke="@colorBlue" Fill="@colorBlue">
                     <TooltipTemplate Context="data">
                         <div>
@@ -90,7 +91,7 @@
                 <RadzenCategoryAxis Max="255" Step="50">
                 </RadzenCategoryAxis>
 
-                <RadzenValueAxis Min="0" Step="@step" Formatter="@Percent">
+                <RadzenValueAxis Min="0" Max="@maxB" Step="@stepB" Formatter="@Percent">
                     <RadzenGridLines Visible="true"/>
                 </RadzenValueAxis>
 
@@ -102,10 +103,16 @@
 
 @code {
 
+    //class HistogramItem
+    //{
+    //    public byte Value { get; set; }
+    //    public int Count { get; set; }
+    //}
     class HistogramItem
     {
         public byte Value { get; set; }
         public int Count { get; set; }
+        public int Max { get; set; }
     }
 
     HistogramItem[] histogramR;
@@ -122,9 +129,17 @@
     static string colorRed = "rgba(255, 0, 0, 0.5)";
     static string colorGreen = "rgba(0, 255, 0, 0.5)";
     static string colorBlue = "rgba(0, 0, 255, 0.5)";
+    double strokeWidth = 2;
+    string aspectRatio = "4/3";
     public bool isRed = false;
     public bool isGreen = false;
     public bool isBlue = false;
+    int maxR = 1;
+    int maxG = 1;
+    int maxB = 1;
+    int stepR = 1;
+    int stepG = 1;
+    int stepB = 1;
 
     //[Parameter]
     //public int[] HistogramArray { get; set; }        
@@ -154,37 +169,38 @@
     {
         Console.WriteLine("RedrawHistogram > SetData");
 
-        int maxR = 1;
-        int maxG = 1;
-        int maxB = 1;
+        maxR = 1;
+        maxG = 1;
+        maxB = 1;
 
         //Stopwatch stopwatch = new Stopwatch();
         //stopwatch.Start();
 
         SKColor[] pixels = SService.bitmap.Pixels;
-        
+
         //stopwatch.Stop();
         //Console.WriteLine("pixels: {0} ms", stopwatch.ElapsedMilliseconds);
         if (isRed)
         {
             //stopwatch.Reset();
             //stopwatch.Start();
-            
+
             //code
             var pixelsListR = pixels.Select(x => x.Red);
-            
+
             //stopwatch.Stop();
             //Console.WriteLine("pixelsR2: {0} ms", stopwatch.ElapsedMilliseconds);
-            
+
             //code
-            histogramListR = GetHistogram2(pixelsListR);
+            histogramListR = GetHistogramItemList(pixelsListR);
 
             //stopwatch.Reset();
             //stopwatch.Start();
 
             //code
-            maxR = (int)Math.Ceiling(histogramListR.Max(x => x.Count) / 4d);
-            
+            //maxR = (int)Math.Ceiling(histogramListR.Max(x => x.Count) / 4d);
+            maxR = histogramListR.Max(x => x.Count);
+
             //stopwatch.Stop();
             //Console.WriteLine("maxR2: {0} ms", stopwatch.ElapsedMilliseconds);
         }
@@ -195,8 +211,9 @@
             //maxG = (int)Math.Ceiling(histogramG.Max(x => x.Count) / 4d);
 
             var pixelsListG = pixels.Select(x => x.Green);
-            histogramListG = GetHistogram2(pixelsListG);
-            maxG = (int)Math.Ceiling(histogramListG.Max(x => x.Count) / 4d);
+            histogramListG = GetHistogramItemList(pixelsListG);
+            //maxG = (int)Math.Ceiling(histogramListG.Max(x => x.Count) / 4d);
+            maxG = histogramListG.Max(x => x.Count);
         }
         if (isBlue)
         {
@@ -205,13 +222,28 @@
             //maxB = (int)Math.Ceiling(histogramB.Max(x => x.Count) / 4d);
 
             var pixelsListB = pixels.Select(x => x.Blue);
-            histogramListB = GetHistogram2(pixelsListB);
-            maxB = (int)Math.Ceiling(histogramListB.Max(x => x.Count) / 4d);
+            histogramListB = GetHistogramItemList(pixelsListB);
+            //maxB = (int)Math.Ceiling(histogramListB.Max(x => x.Count) / 4d);
+            maxB = histogramListB.Max(x => x.Count);
         }
         pixelsLength = pixels.Length;
         //step = histogram.Select(x => x.Count).Max() / 4;
         //step = histogram.Max(x => x.Count) / 4;
-        step = new List<int>{ maxR, maxG, maxB }.Max();
+        //step = new List<int>{ maxR, maxG, maxB }.Max();
+        double steps = 4;
+        //step = (int)Math.Ceiling(new List<int>{ maxR, maxG, maxB }.Max() / steps);
+        stepR = (int)Math.Round(maxR / steps);
+        stepR = stepR > 0 ? stepR : 1;
+        maxR = 4 * stepR + 1;
+
+        stepG = (int)Math.Round(maxG / steps);
+        stepG = stepG > 0 ? stepG : 1;
+        maxG = 4 * stepG + 1;
+
+        stepB = (int)Math.Round(maxB / steps);
+        stepB = stepB > 0 ? stepB : 1;
+        maxB = 4 * stepB + 1;
+
         dataIsSet = true;
     }
 
@@ -248,39 +280,10 @@
         return resultH;
     }
 
-    private List<HistogramItem> GetHistogram2(IEnumerable<byte> pixels)
+    private List<HistogramItem> GetHistogramItemList(IEnumerable<byte> pixels)
     {
         List<HistogramItem> resultH = new List<HistogramItem>();
-        List<byte> pixelsList = pixels.ToList();
-
-        //Stopwatch stopwatch = new Stopwatch();
-        //stopwatch.Start();
-        
-        int[] array = new int[256];
-        // fastest - around 110ms for cat01 500.jpg red
-        foreach(var pixel in pixelsList)
-        {
-            array[pixel]++;
-        }
-
-        // fast - around 210ms for cat01 500.jpg red (IEnumerable<byte> pixels)
-        //foreach(var pixel in pixels)
-        //{
-        //    array[pixel]++;
-        //}
-
-        // VERY slow, both
-        //for (int i = 0; i < pixels.Count(); i++)
-        //{
-        //    Console.WriteLine(i);
-        //    array[pixels.ElementAt(i)]++;
-        //    array[pixelsList[i]]++;
-        //}
-
-        //stopwatch.Stop();
-        //Console.WriteLine("array2: {0} ms", stopwatch.ElapsedMilliseconds);
-
-        //step = array.Max() / 4;
+        int[] array = ImageProc.GetHistogramArray(pixels);
 
         //stopwatch.Reset();
         //stopwatch.Start();

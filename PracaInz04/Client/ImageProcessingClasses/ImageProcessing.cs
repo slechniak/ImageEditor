@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.Processing;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +20,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			Grayscale,
 			Binary,
 			Brightness,
-			Contrast
+			Contrast,
+			EqualizeHistogram,
+			StretchHistogram
 		}
 
 		StateService SService { get; set; }
@@ -28,9 +31,10 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		byte minValue, maxValue;
 		//byte[] histogram;
-		int[] histogram;
+		//int[] histogram;
 		SKBitmap bitmap2;
-		byte[] pixelValues;
+		//byte[] pixelValues;
+		IEnumerable<byte> pixelValues;
 
 		float[] pixelsH, pixelsS, pixelsL;
 		float minL, maxL;
@@ -296,12 +300,52 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			if (SService.newBitmap)
 			{
 				bitmap2 = FilterGrayscale(bitmap);
-				pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
+                //pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
+                pixelValues = bitmap2.Pixels.Select(x => x.Red);
 			}
-			byte[] table = ContrastTable2(factor, pixelValues);
+			//byte[] table = ContrastTable1(factor, pixelValues);
+			//byte[] table = ContrastTable2(factor, pixelValues);
+			//byte[] table = ContrastTable3(factor, pixelValues);
+			byte[] table = ContrastTable4(factor, pixelValues);
             //ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
+            return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
+				null, table, table, table));
+		}
+
+		public SKBitmap EqualizeHistogram(SKBitmap bitmap)
+        {
+			bitmap2 = FilterGrayscale(bitmap);
+			IEnumerable<byte> pixelList = bitmap2.Pixels.Select(x => x.Red);
+			byte[] table = EqualizedHistogramTable(pixelList);
+			//ShowTable(table.Select(x => (int)x).ToArray(), "EqualizeHistogram table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
+		}
+
+		public byte[] EqualizedHistogramTable(IEnumerable<byte> pixels)
+        {
+			int pixelsLength = pixels.Count();
+			int[] histogram = GetHistogramArray(pixels);
+			int[] cdf = GetCDF(histogram);
+			float cdfMin = cdf.Min();
+
+			byte[] table = new byte[256];
+            for (int i = 0; i < table.Length; i++)
+            {
+				table[i] = (byte)Math.Round((cdf[i] - cdfMin) / (pixelsLength - cdfMin) * 255);
+            }
+			return table;
+        }
+
+		public int[] GetCDF(int[] histogram)
+		{
+			int[] array = new int[256];
+			histogram.CopyTo(array, 0);
+            for (int i = 1; i < histogram.Length; i++)
+            {
+				array[i] += array[i - 1];
+            }
+			return array;
 		}
 
 		public float[] GrayscaleMatrix()
@@ -372,7 +416,42 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
-		public byte[] ContrastTable2(int factor, byte[] pixels)
+		// casts to (oldmin-f ; oldmax+f)
+		public byte[] ContrastTable1(int factor, IEnumerable<byte> pixels)
+		{
+			if (SService.newBitmap)
+			{
+				minValue = pixels.Min();
+				maxValue = pixels.Max();
+				SService.newBitmap = false;
+			}
+			byte[] table = new byte[256];
+			for (int i = 0; i < table.Length; i++)
+			{
+				table[i] = (byte)i;
+			}
+
+			float oldMin = minValue;
+			float oldMax = maxValue;
+			float newMin = minValue - factor;
+			float newMax = maxValue + factor;
+			// dla ujemnych wartosci factor
+			newMin = Math.Min(newMin, newMax);
+			newMax = Math.Max(newMax, newMin);
+			float newRange = newMax - newMin;
+
+			for (int i = (int)oldMin; i <= oldMax; i++)
+			{
+				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
+				table[i] = (byte)Math.Clamp(newValue, 0, 255);
+			}
+
+			return table;
+		}
+
+		// centers destination range around 128
+		public byte[] ContrastTable2(int factor, IEnumerable<byte> pixels)
 		{
 			if (SService.newBitmap)
 			{
@@ -415,6 +494,97 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
+		// casts to max(oldmin-f,0):min(oldmax+f,255)
+		public byte[] ContrastTable3(int factor, IEnumerable<byte> pixels)
+		{
+			if (SService.newBitmap)
+			{
+				minValue = pixels.Min();
+				maxValue = pixels.Max();
+				SService.newBitmap = false;
+			}
+			byte[] table = new byte[256];
+			for (int i = 0; i < table.Length; i++)
+			{
+				table[i] = (byte)i;
+			}
+
+			float oldMin = minValue;
+			float oldMax = maxValue;
+			float newMin = Math.Max(minValue - factor, 0);
+			float newMax = Math.Min(maxValue + factor, 255);
+			// dla ujemnych wartosci factor
+			newMin = Math.Min(newMin, newMax);
+			newMax = Math.Max(newMax, newMin);
+			float newRange = newMax - newMin;
+
+			for (int i = (int)oldMin; i <= oldMax; i++)
+			{
+				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
+				//table[i] = (byte)Math.Clamp(newValue, 0, 255);
+				table[i] = (byte)newValue;
+			}
+
+			return table;
+		}
+
+		// should be percentiles 5,95 instead of oldmin, oldmax
+		// casts to max(oldmin-f,0):min(oldmax+f,255), then if (newmin==0 && newmax==255) casts to (oldmin-f ; oldmax+f)
+		public byte[] ContrastTable4(int factor, IEnumerable<byte> pixels)
+		{
+			if (SService.newBitmap)
+			{
+				minValue = pixels.Min();
+				maxValue = pixels.Max();
+				SService.newBitmap = false;
+			}
+			byte[] table = new byte[256];
+			for (int i = 0; i < table.Length; i++)
+			{
+				table[i] = (byte)i;
+			}
+
+			float oldMin = minValue;
+			float oldMax = maxValue;
+			float newMin = minValue - factor;
+			float newMax = maxValue + factor;
+			if (newMin >= 0 || newMax <= 255)
+			{
+				newMin = Math.Max(newMin, 0);
+				newMax = Math.Min(newMax, 255);
+			}
+			// dla ujemnych wartosci factor
+			newMin = Math.Min(newMin, newMax);
+			newMax = Math.Max(newMax, newMin);
+			float newRange = newMax - newMin;
+
+			for (int i = (int)oldMin; i <= oldMax; i++)
+			{
+				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
+				table[i] = (byte)Math.Clamp(newValue, 0, 255);
+            }
+
+			return table;
+		}
+
+		//percentiles
+		// fivepercent = 0.05*pixels.length;
+		// for(int i=0; i<histogram.length; i++)
+		// {
+		//	fivepercent -= histogram[i];
+		//  if(fivepercent<=0)
+		//  percentile05 = i;
+		// }
+		//
+		// for(int i=histogram.length-1; i>=0; i--)
+		// {
+		//	fivepercent -= histogram[i];
+		//  if(fivepercent<=0)
+		//  percentile95 = i;
+		// }
+
 		public int[] GetHistogram2(byte[] pixels)
 		{
 			int[] histogram = new int[256];
@@ -423,6 +593,36 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				histogram[pixels[i]] += 1;
 			}
 			return histogram;
+		}
+
+		public int[] GetHistogramArray(IEnumerable<byte> pixels)
+		{
+			List<byte> pixelsList = pixels.ToList();
+
+			//Stopwatch stopwatch = new Stopwatch();
+			//stopwatch.Start();
+
+			int[] array = new int[256];
+			// fastest - around 110ms for cat01 500.jpg red (List<byte> pixelsList)
+			foreach (var pixel in pixelsList)
+			{
+				array[pixel]++;
+			}
+			return array;
+			// fast - around 210ms for cat01 500.jpg red (IEnumerable<byte> pixels)
+			//foreach(var pixel in pixels)
+			//{
+			//    array[pixel]++;
+			//}
+			// VERY slow, both
+			//for (int i = 0; i < pixels.Count(); i++)
+			//{
+			//    Console.WriteLine(i);
+			//    array[pixels.ElementAt(i)]++;
+			//    array[pixelsList[i]]++;
+			//}
+			//stopwatch.Stop();
+			//Console.WriteLine("array2: {0} ms", stopwatch.ElapsedMilliseconds);
 		}
 
 		//public byte ByteRange(int number)

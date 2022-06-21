@@ -11,7 +11,21 @@
         <option value="" selected>None</option>
         @foreach(var fType in filterTypeList)
         {
-            <option value=@fType>@fType</option>
+            @*<option value=@fType>@((FilterType)fType == FilterType.EqualizeHistogram ? "Equalize histogram" : fType)</option>*@
+            <option value=@fType>
+                @switch((FilterType)fType)
+                {
+                    case FilterType.EqualizeHistogram:
+                        @:Equalize histogram
+                        break;
+                    case FilterType.StretchHistogram:
+                        @:Stretch histogram
+                        break;
+                    default:
+                        @fType
+                        break;
+                }
+            </option>
         }
     </select>
 </div>
@@ -46,7 +60,7 @@
         min="@minFactor" max="@maxFactor"
         type="range" class="form-range m-2 w-50" id="customRange3">
     <div class="form-check m-2">
-        <input class="form-check-input" type="checkbox" value="@inColor" id="flexCheckChecked" checked
+        <input class="form-check-input" type="checkbox" value="@inColor" id="flexCheckChecked"
             @onchange="OnInColorChange">
         <label class="form-check-label" for="flexCheckChecked">Color</label>
     </div>
@@ -54,7 +68,7 @@
         value="@factor" @onchange="OnFactorChange"
         type="number" class="form-control m-2 w-25" id="formControlInput3">
 }
-<button @onclick="ApplyFilter" class="btn btn-primary">Apply</button>
+<button @onclick="ApplyFilter" class="btn btn-primary">Save changes</button>
 
 @code {
     [Parameter]
@@ -73,11 +87,16 @@
 
     public int factor = 0;
     //public int minFactor = 0;
-    public int minFactor = -100;
-    public int maxFactor = 100;
-    public bool inColor = true;
+    //public int minFactor = -100;
+    //public int maxFactor = 100;
+    //public bool inColor = true;
+    public int minFactor = -255;
+    public int maxFactor = 255;
+    public bool inColor = false;
 
     SKBitmap result;
+
+    // <text>Equalize histogram</text> == @:Equalize histogram
 
     public async Task ApplyFilter()
     {
@@ -88,8 +107,8 @@
     public async Task FilterAndShow()
     {
         result = SService.bitmap;
-        SKColor color = result.GetPixel(0, 0);
-        Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        //SKColor color = result.GetPixel(0, 0);
+        //Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
         switch (filterType)
         {
             case ImageProcessing.FilterType.Grayscale:
@@ -104,9 +123,12 @@
             case ImageProcessing.FilterType.Contrast:
                 result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
                 break;
+            case ImageProcessing.FilterType.EqualizeHistogram:
+                result = ImageProc.EqualizeHistogram(SService.bitmap);
+                break;
         }
-        color = result.GetPixel(0, 0);
-        Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        //color = result.GetPixel(0, 0);
+        //Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
         await ShowBitmap.InvokeAsync(result);
     }
 
