@@ -22,7 +22,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			Brightness,
 			Contrast,
 			EqualizeHistogram,
-			StretchHistogram
+			StretchHistogram,
+			Average,
+			Sharpen,
+			Gaussian,
+			EdgeDetect
 		}
 
 		StateService SService { get; set; }
@@ -185,18 +189,158 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return bitmapArray;
 		}
 
-		public SKBitmap ApplyFilter(SKBitmap bitmap, SKColorFilter colorFilter)
+		public SKBitmap ApplyFilter(SKBitmap bitmap, SKColorFilter colorFilter = null, SKImageFilter imageFilter = null)
         {
 			SKBitmap result = new SKBitmap(bitmap.Info);
 			using (SKCanvas canvas = new SKCanvas(result))
 			{
 				SKPaint paint = new SKPaint()
 				{
-					ColorFilter = colorFilter
+					ColorFilter = colorFilter,
+					ImageFilter = imageFilter
 				};
 				canvas.DrawBitmap(bitmap, result.Info.Rect, paint);
 			}
 			return result;
+		}
+
+		public float[] IdentityKernel()
+        {
+			return new float[]
+			{
+				0,0,0,
+				0,1,0,
+				0,0,0
+			};
+		}
+
+		public SKBitmap FilterGaussian(SKBitmap bitmap, int kernelSize)
+		{
+			float[] kernel = GaussianKernel(kernelSize);
+			if (SService.newBitmap)
+			{
+				bitmap2 = FilterGrayscale(bitmap);
+				SService.newBitmap = false;
+			}
+			int offset = (int)Math.Floor(kernelSize / 2f);
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
+				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
+				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public float[] GaussianKernel(int kernelSize)
+		{
+			float[] kernel = IdentityKernel();
+			switch (kernelSize)
+			{
+				case 3:
+					kernel = new float[]
+					{
+						1, 2, 1,
+						2, 4, 2,
+						1, 2, 1
+					};
+					for (int i = 0; i < kernel.Length; i++)
+					{
+						kernel[i] /= 16;
+					}
+					break;
+				case 5:
+					kernel = new float[]
+					{
+						1, 4, 6, 4, 1,
+						4, 16, 24, 16, 4,
+						6, 24, 36, 24, 6,
+						4, 16, 24, 16, 4,
+						1, 4, 6, 4, 1
+					};
+					for (int i = 0; i < kernel.Length; i++)
+					{
+						kernel[i] /= 256;
+					}
+					break;
+			}
+
+			return kernel;
+		}
+
+		public SKBitmap FilterAverage(SKBitmap bitmap, int kernelSize)
+		{
+			float[] kernel = AverageKernel(kernelSize);
+			if (SService.newBitmap)
+			{
+				bitmap2 = FilterGrayscale(bitmap);
+				SService.newBitmap = false;
+			}
+			int offset = (int)Math.Floor(kernelSize / 2f);
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
+				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
+				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public float[] AverageKernel(int kernelSize)
+		{
+			int kernelLength = kernelSize * kernelSize;
+			float[] kernel = new float[kernelLength];
+			float value = 1f / (kernelLength);
+			Console.WriteLine($"value: {value} kernelSize: {kernelSize}");
+			for (int i = 0; i < kernel.Length; i++)
+			{
+				kernel[i] = value;
+			}
+			return kernel;
+		}
+
+		public SKBitmap FilterSharpen(SKBitmap bitmap)
+		{
+			float[] kernel = SharpenKernel();
+			if (SService.newBitmap)
+			{
+				bitmap2 = FilterGrayscale(bitmap);
+				SService.newBitmap = false;
+			}
+			int kernelSize = (int)Math.Round(Math.Sqrt(kernel.Length));
+			int offset = (int)Math.Floor(kernelSize / 2f);
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
+				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0, 
+				kernelOffset: new SKPointI(offset,offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public float[] SharpenKernel()
+        {
+			float[] kernel = new float[]
+            {
+				0, -1, 0,
+				-1, 5, -1,
+				0, -1, 0
+            };
+			return kernel;
+        }
+
+		public SKBitmap FilterEdgeDetect(SKBitmap bitmap)
+		{
+			float[] kernel = EdgeDetectKernel();
+			if (SService.newBitmap)
+			{
+				bitmap2 = FilterGrayscale(bitmap);
+				SService.newBitmap = false;
+			}
+			int kernelSize = (int)Math.Round(Math.Sqrt(kernel.Length));
+			int offset = (int)Math.Floor(kernelSize / 2f);
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
+				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
+				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public float[] EdgeDetectKernel()
+		{
+			float[] kernel = new float[]
+			{
+				0, 1, 0,
+				1, -4, 1,
+				0, 1, 0
+			};
+			return kernel;
 		}
 
 		public SKBitmap FilterBinary(SKBitmap bitmap, int treshold)

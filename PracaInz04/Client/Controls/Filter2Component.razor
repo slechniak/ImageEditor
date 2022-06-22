@@ -21,6 +21,9 @@
                     case FilterType.StretchHistogram:
                         @:Stretch histogram
                         break;
+                    case FilterType.EdgeDetect:
+                        @:Edge detection
+                        break;
                     default:
                         @fType
                         break;
@@ -79,6 +82,28 @@
         value="@cutoff" @onchange="OnCutoffChange"
         type="number" class="form-control m-2 w-25" id="formControlInput4">
 }
+@if(filterType == FilterType.Average)
+{
+    <label for="customRange5" class="form-label pt-2 px-2">Kernel size: @kernelSize</label>
+    <input 
+        value="@kernelSize" @oninput="OnKernelSizeChange"
+        min="@minKernel" max="@maxKernel" step="2"
+        type="range" class="form-range m-2 w-75" id="customRange5">
+    @*<input 
+        value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
+        type="number" class="form-control m-2 w-25" id="formControlInput5">*@
+}
+@if(filterType == FilterType.Gaussian)
+{
+    <label for="customRange6" class="form-label pt-2 px-2">Kernel size: @kernelSize</label>
+    <input 
+        value="@kernelSize" @oninput="OnKernelGaussChange"
+        min="@minKernelGauss" max="@maxKernelGauss" step="2"
+        type="range" class="form-range m-2 w-75" id="customRange6">
+    @*<input 
+        value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
+        type="number" class="form-control m-2 w-25" id="formControlInput5">*@
+}
 <button @onclick="ApplyFilter" class="btn btn-primary">Save changes</button>
 
 @code {
@@ -109,6 +134,13 @@
     public int minCutoff = 0;
     public int maxCutoff = 49;
 
+    public int kernelSize = 3;
+    public int minKernel = 1;
+    public int maxKernel = 11;
+
+    public int minKernelGauss = 3;
+    public int maxKernelGauss = 5;
+
     SKBitmap result;
 
     // <text>Equalize histogram</text> == @:Equalize histogram
@@ -117,6 +149,27 @@
     {
         await FilterAndShow();
         await AddBitmap.InvokeAsync(result);
+    }
+
+    public async Task ShowPixels(SKBitmap bitmap, string title)
+    {
+        SKColor[] pixels = bitmap.Pixels;
+        int k = 0;
+        string str = title;
+        string toCopy = "";
+        for (int i = 0; i < bitmap.Width; i++)
+        {
+            for (int j = 0; j < bitmap.Height; j++)
+            {
+                str += $"[{i},{j}]:{pixels[k].Red}, ";
+                toCopy += $"{pixels[k].Red}+";
+                k++;
+            }
+            str += "\n";
+            toCopy += ";";
+        }
+        Console.WriteLine(str);
+        Console.WriteLine(toCopy);
     }
 
     public async Task FilterAndShow()
@@ -150,6 +203,24 @@
             case ImageProcessing.FilterType.StretchHistogram:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.StretchHistogram(result, cutoff);
+                break;
+            case ImageProcessing.FilterType.Average:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                //await ShowPixels(result, "before: ");
+                result = ImageProc.FilterAverage(result, kernelSize);
+                //await ShowPixels(result, "after: ");
+                break;
+            case ImageProcessing.FilterType.Sharpen:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterSharpen(result);
+                break;
+            case ImageProcessing.FilterType.Gaussian:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterGaussian(result, kernelSize);
+                break;
+            case ImageProcessing.FilterType.EdgeDetect:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterEdgeDetect(result);
                 break;
         }
         //color = result.GetPixel(0, 0);
@@ -217,6 +288,30 @@
         //factor = Math.Max(factor, minFactor);
         cutoff = Math.Clamp(cutoff, minCutoff, maxCutoff);
         await FilterAndShow();
+    }
+
+    private async Task OnKernelSizeChange(ChangeEventArgs e)
+    {
+        kernelSize = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        kernelSize = Math.Clamp(kernelSize, minKernel, maxKernel);
+        if (kernelSize % 2 != 0)
+            await FilterAndShow();
+        else
+            Console.WriteLine($"even kernel size {kernelSize}");
+    }
+
+    private async Task OnKernelGaussChange(ChangeEventArgs e)
+    {
+        kernelSize = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        kernelSize = Math.Clamp(kernelSize, minKernelGauss, maxKernelGauss);
+        if (kernelSize % 2 != 0)
+            await FilterAndShow();
+        else
+            Console.WriteLine($"even kernel size {kernelSize}");
     }
 
     private async Task OnInColorChange(ChangeEventArgs e)
