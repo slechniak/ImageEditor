@@ -91,9 +91,9 @@
                 <button class="btn btn-primary m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
                 @*<button class="btn btn-primary m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
             }
-            <Filter2Component UpdateBitmap="UpdateBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
+            <Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
             <HistogramComponent></HistogramComponent>
-            <ColorSliderComponent UpdateBitmap="UpdateBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>
+            <ColorSliderComponent AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>
         </div>
 	</div>
 </div>

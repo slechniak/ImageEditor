@@ -82,7 +82,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<SKBitmap> UpdateBitmap { get; set; }
+    public EventCallback<SKBitmap> AddBitmap { get; set; }
     [Parameter]
     public EventCallback<SKBitmap> ShowBitmap { get; set; }
 
@@ -107,7 +107,8 @@
         multiShift = 0;
 
         //?
-        result = SService.bitmap;
+        //result = SService.bitmap;
+        result = SService.bitmap.Copy();
         await ShowBitmap.InvokeAsync(result);
     }
 
@@ -133,16 +134,18 @@
             await FilterAndShowMulti();
         else
             await FilterAndShow();
-        await UpdateBitmap.InvokeAsync(result);
+        await AddBitmap.InvokeAsync(result);
     }
 
     public async Task FilterAndShow()
     {
-        result = SService.bitmap;
+        //result = SService.bitmap;
+        result = SService.bitmap.Copy();
         //SKColor color = result.GetPixel(0, 0);
         //Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
 
-        result = ImageProc.ChangeColor(SService.bitmap, colorShift, colorChannel);
+        //result = ImageProc.ChangeColor(SService.bitmap, colorShift, colorChannel);
+        result = ImageProc.ChangeColor(result, colorShift, colorChannel);
 
         //color = result.GetPixel(0, 0);
         //Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
@@ -151,14 +154,17 @@
 
     public async Task FilterAndShowMulti()
     {
-        result = SService.bitmap;
-        result = ImageProc.ChangeColorMulti(SService.bitmap, colorShift, isRed, isGreen, isBlue);
+        //result = SService.bitmap;
+        result = SService.bitmap.Copy();
+        //result = ImageProc.ChangeColorMulti(SService.bitmap, colorShift, isRed, isGreen, isBlue);
+        result = ImageProc.ChangeColorMulti(result, colorShift, isRed, isGreen, isBlue);
         await ShowBitmap.InvokeAsync(result);
     }
 
     protected override void OnInitialized()
     {
-        result = SService.bitmap;
+        //result = SService.bitmap;
+        result = SService.bitmap?.Copy();
     }
 
     public async Task OnNumberChange(ChangeEventArgs e, SKColorChannel channel)

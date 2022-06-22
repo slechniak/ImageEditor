@@ -4,19 +4,20 @@
 @inject ImageProcessing ImageProc
 
 <p class="fs-6 fw-bold m-2">Histogram</p>
+@*<button @onclick="RedrawHistogram" class="btn btn-primary mx-1">Update histograms</button>*@
 <div class="container my-2">
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="checkbox" value="@isRed" id="flexCheckChecked6"
+        <input class="form-check-input" type="checkbox" value="@SService.isRed" id="flexCheckChecked6"
             @onchange="() => ToggleColor(SKColorChannel.R)">
         <label class="form-check-label" for="flexCheckChecked6">Red</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="checkbox" value="@isGreen" id="flexCheckChecked5"
+        <input class="form-check-input" type="checkbox" value="@SService.isGreen" id="flexCheckChecked5"
             @onchange="() => ToggleColor(SKColorChannel.G)">
         <label class="form-check-label" for="flexCheckChecked5">Green</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="checkbox" value="@isBlue" id="flexCheckChecked4"
+        <input class="form-check-input" type="checkbox" value="@SService.isBlue" id="flexCheckChecked4"
             @onchange="() => ToggleColor(SKColorChannel.B)">
         <label class="form-check-label" for="flexCheckChecked4">Blue</label>
     </div>
@@ -25,7 +26,7 @@
 @if(dataIsSet)
 {
     <div class="w-100 border border-success ps-2 my-2">
-        @if (isRed)
+        @if (SService.isRed)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
                 <RadzenColumnSeries Data="@histogramListR" CategoryProperty="Value"  StrokeWidth="@strokeWidth" ValueProperty="Count"
@@ -50,7 +51,7 @@
                 <RadzenLegend Visible="false" />
             </RadzenChart>
         }
-        @if (isGreen)
+        @if (SService.isGreen)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
                 <RadzenColumnSeries Data="@histogramListG" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
@@ -74,7 +75,7 @@
                 <RadzenLegend Visible="false" />
             </RadzenChart>
         }
-        @if (isBlue)
+        @if (SService.isBlue)
         {
             <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
                 <RadzenColumnSeries Data="@histogramListB" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
@@ -102,6 +103,9 @@
 }
 
 @code {
+
+    //<input class="form-check-input" type="checkbox" value="@SService.isRed" id="flexCheckChecked6"
+    //@onchange="() => ToggleColor(SKColorChannel.R)">
 
     //class HistogramItem
     //{
@@ -131,9 +135,9 @@
     static string colorBlue = "rgba(0, 0, 255, 0.5)";
     double strokeWidth = 2;
     string aspectRatio = "4/3";
-    public bool isRed = false;
-    public bool isGreen = false;
-    public bool isBlue = false;
+    //public bool isRed = false;
+    //public bool isGreen = false;
+    //public bool isBlue = false;
     int maxR = 1;
     int maxG = 1;
     int maxB = 1;
@@ -158,7 +162,8 @@
 
     private async Task RedrawHistogram()
     {
-        if (isRed || isGreen || isBlue)
+        Console.WriteLine($"{SService.isRed}, {SService.isGreen}, {SService.isBlue}");
+        if (SService.isRed || SService.isGreen || SService.isBlue)
         {
             await SetData();
             StateHasChanged();
@@ -180,7 +185,7 @@
 
         //stopwatch.Stop();
         //Console.WriteLine("pixels: {0} ms", stopwatch.ElapsedMilliseconds);
-        if (isRed)
+        if (SService.isRed)
         {
             //stopwatch.Reset();
             //stopwatch.Start();
@@ -204,7 +209,7 @@
             //stopwatch.Stop();
             //Console.WriteLine("maxR2: {0} ms", stopwatch.ElapsedMilliseconds);
         }
-        if (isGreen)
+        if (SService.isGreen)
         {
             //byte[] pixelsG = pixels.Select(x => x.Green).ToArray();
             //histogramG = GetHistogram(pixelsG);
@@ -215,7 +220,7 @@
             //maxG = (int)Math.Ceiling(histogramListG.Max(x => x.Count) / 4d);
             maxG = histogramListG.Max(x => x.Count);
         }
-        if (isBlue)
+        if (SService.isBlue)
         {
             //byte[] pixelsB = pixels.Select(x => x.Blue).ToArray();
             //histogramB = GetHistogram(pixelsB);
@@ -308,13 +313,13 @@
         switch(channel)
         {
             case SKColorChannel.R:
-                isRed = ! isRed;
+                SService.isRed = ! SService.isRed;
                 break;
             case SKColorChannel.G:
-                isGreen = ! isGreen;
+                SService.isGreen = ! SService.isGreen;
                 break;
             case SKColorChannel.B:
-                isBlue = ! isBlue;
+                SService.isBlue = ! SService.isBlue;
                 break;
         }
         await RedrawHistogram();
@@ -334,7 +339,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        SService.RedrawHistogram += RedrawHistogram;
+        SService.isRed = false;
+        SService.isGreen = false;
+        SService.isBlue = false;
+        //SService.RedrawHistogram -= RedrawHistogram;
+        //SService.RedrawHistogram += RedrawHistogram;
+        SService.SubscribeToRedrawHistogram(RedrawHistogram);
     }
 }
 

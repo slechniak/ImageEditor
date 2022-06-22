@@ -50,9 +50,20 @@ namespace PracaInz04.Client.Services
         public event Func<Task> RedrawHistogram;
         //public event Action RedrawHistogram;
 
+        // histogram
+        public bool isRed = false;
+        public bool isGreen = false;
+        public bool isBlue = false;
+
         public StateService(ILocalStorageService ls)
         {
             localStorage = ls;
+        }
+
+        public void SubscribeToRedrawHistogram(Func<Task> handler)
+        {
+            RedrawHistogram = null;
+            RedrawHistogram += handler;
         }
 
         public void NotifyStateChanged()

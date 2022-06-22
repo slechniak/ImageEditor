@@ -36,10 +36,10 @@
     <input 
         value="@treshold" @oninput="OnTresholdChange"
         min="@minTreshold" max="@maxTreshold"
-        type="range" class="form-range m-2 w-50" id="customRange1">
+        type="range" class="form-range m-2 w-75" id="customRange1">
     <input 
         value="@treshold" @onchange="OnTresholdChange"
-        type="number" class="form-control m-2 w-50" id="formControlInput1">
+        type="number" class="form-control m-2 w-25" id="formControlInput1">
 }
 @if(filterType == FilterType.Brightness)
 {
@@ -47,10 +47,10 @@
     <input 
         value="@level" @oninput="OnLevelChange"
         min="@minLevel" max="@maxLevel"
-        type="range" class="form-range m-2 w-50" id="customRange2">
+        type="range" class="form-range m-2 w-75" id="customRange2">
     <input 
         value="@level" @onchange="OnLevelChange"
-        type="number" class="form-control m-2 w-50" id="formControlInput2">
+        type="number" class="form-control m-2 w-25" id="formControlInput2">
 }
 @if(filterType == FilterType.Contrast)
 {
@@ -58,7 +58,7 @@
     <input 
         value="@factor" @oninput="OnFactorChange"
         min="@minFactor" max="@maxFactor"
-        type="range" class="form-range m-2 w-50" id="customRange3">
+        type="range" class="form-range m-2 w-75" id="customRange3">
     <div class="form-check m-2">
         <input class="form-check-input" type="checkbox" value="@inColor" id="flexCheckChecked"
             @onchange="OnInColorChange">
@@ -68,11 +68,22 @@
         value="@factor" @onchange="OnFactorChange"
         type="number" class="form-control m-2 w-25" id="formControlInput3">
 }
+@if(filterType == FilterType.StretchHistogram)
+{
+    <label for="customRange4" class="form-label pt-2 px-2">Percentile cut</label>
+    <input 
+        value="@cutoff" @oninput="OnCutoffChange"
+        min="@minCutoff" max="@maxCutoff"
+        type="range" class="form-range m-2 w-75" id="customRange4">
+    <input 
+        value="@cutoff" @onchange="OnCutoffChange"
+        type="number" class="form-control m-2 w-25" id="formControlInput4">
+}
 <button @onclick="ApplyFilter" class="btn btn-primary">Save changes</button>
 
 @code {
     [Parameter]
-    public EventCallback<SKBitmap> UpdateBitmap { get; set; }
+    public EventCallback<SKBitmap> AddBitmap { get; set; }
     [Parameter]
     public EventCallback<SKBitmap> ShowBitmap { get; set; }
     public Array filterTypeList;
@@ -94,6 +105,10 @@
     public int maxFactor = 255;
     public bool inColor = false;
 
+    public int cutoff = 0;
+    public int minCutoff = 0;
+    public int maxCutoff = 49;
+
     SKBitmap result;
 
     // <text>Equalize histogram</text> == @:Equalize histogram
@@ -101,30 +116,40 @@
     public async Task ApplyFilter()
     {
         await FilterAndShow();
-        await UpdateBitmap.InvokeAsync(result);
+        await AddBitmap.InvokeAsync(result);
     }
 
     public async Task FilterAndShow()
     {
-        result = SService.bitmap;
+        //result = SService.bitmap;
+        result = SService.bitmap.Copy();
         //SKColor color = result.GetPixel(0, 0);
         //Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
         switch (filterType)
         {
             case ImageProcessing.FilterType.Grayscale:
-                result = ImageProc.FilterGrayscale(SService.bitmap);
+                //result = ImageProc.FilterGrayscale(SService.bitmap);
+                result = ImageProc.FilterGrayscale(result);
                 break;
             case ImageProcessing.FilterType.Binary:
-                result = ImageProc.FilterBinary(SService.bitmap, treshold);
+                //result = ImageProc.FilterBinary(SService.bitmap, treshold);
+                result = ImageProc.FilterBinary(result, treshold);
                 break;
             case ImageProcessing.FilterType.Brightness:
-                result = ImageProc.FilterBrightness(SService.bitmap, level);
+                //result = ImageProc.FilterBrightness(SService.bitmap, level);
+                result = ImageProc.FilterBrightness(result, level);
                 break;
             case ImageProcessing.FilterType.Contrast:
-                result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
+                //result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
+                result = ImageProc.FilterContrast(result, factor, inColor);
                 break;
             case ImageProcessing.FilterType.EqualizeHistogram:
-                result = ImageProc.EqualizeHistogram(SService.bitmap);
+                //result = ImageProc.EqualizeHistogram(SService.bitmap);
+                result = ImageProc.EqualizeHistogram(result);
+                break;
+            case ImageProcessing.FilterType.StretchHistogram:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.StretchHistogram(result, cutoff);
                 break;
         }
         //color = result.GetPixel(0, 0);
@@ -134,7 +159,8 @@
 
     protected override void OnInitialized()
     {
-        result = SService.bitmap;
+        //result = SService.bitmap;
+        result = SService.bitmap?.Copy();
         filterTypeList = Enum.GetValues(typeof(FilterType));
     }
 
@@ -145,12 +171,14 @@
             if(Enum.TryParse((string)e.Value, out FilterType enumVal))
             {
                 filterType = enumVal;
+                SService.newBitmap = true;
                 await FilterAndShow();
             }
             else
             {
                 filterType = null;
-                await ShowBitmap.InvokeAsync(SService.bitmap);
+                //await ShowBitmap.InvokeAsync(SService.bitmap);
+                await ShowBitmap.InvokeAsync(SService.bitmap.Copy());
             }
         }
     }
@@ -179,6 +207,15 @@
         //factor = Math.Min(factor, maxFactor);
         //factor = Math.Max(factor, minFactor);
         factor = Math.Clamp(factor, minFactor, maxFactor);
+        await FilterAndShow();
+    }
+
+    private async Task OnCutoffChange(ChangeEventArgs e)
+    {
+        cutoff = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        cutoff = Math.Clamp(cutoff, minCutoff, maxCutoff);
         await FilterAndShow();
     }
 

@@ -35,6 +35,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		SKBitmap bitmap2;
 		//byte[] pixelValues;
 		IEnumerable<byte> pixelValues;
+		int[] histogramArray;
 
 		float[] pixelsH, pixelsS, pixelsL;
 		float minL, maxL;
@@ -303,10 +304,10 @@ namespace PracaInz04.Client.ImageProcessingClasses
                 //pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
                 pixelValues = bitmap2.Pixels.Select(x => x.Red);
 			}
-			//byte[] table = ContrastTable1(factor, pixelValues);
-			//byte[] table = ContrastTable2(factor, pixelValues);
-			//byte[] table = ContrastTable3(factor, pixelValues);
-			byte[] table = ContrastTable4(factor, pixelValues);
+			byte[] table = ContrastTable1(factor, pixelValues);
+            //byte[] table = ContrastTable2(factor, pixelValues);
+            //byte[] table = ContrastTable3(factor, pixelValues);
+            //byte[] table = ContrastTable4(factor, pixelValues);
             //ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
             return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
@@ -320,6 +321,49 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			//ShowTable(table.Select(x => (int)x).ToArray(), "EqualizeHistogram table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
+		}
+
+		public SKBitmap StretchHistogram(SKBitmap bitmap, int cutoff)
+		{
+			if (SService.newBitmap)
+			{
+				bitmap2 = FilterGrayscale(bitmap);
+				pixelValues = bitmap2.Pixels.Select(x => x.Red);
+				histogramArray = GetHistogramArray(pixelValues);
+				SService.newBitmap = false;
+			}
+			byte[] table = StretchedHistogramTable(histogramArray, cutoff);
+			//ShowTable(table.Select(x => (int)x).ToArray(), "EqualizeHistogram table");
+			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
+				null, table, table, table));
+		}
+
+		public byte[] StretchedHistogramTable(int[] histogram, int cutoff)
+		{
+			int pixelsLength = pixelValues.Count();
+            byte centileMin = Percentile(histogram, cutoff);
+            byte centileMax = Percentile(histogram, 100 - cutoff);
+            //Console.WriteLine($"min: {pixels.Min()}, max: {pixels.Max()}");
+            Console.WriteLine($"centileMin: {centileMin}, centileMax: {centileMax}");
+
+            byte[] table = new byte[256];
+			//        for (int i = 0; i < table.Length; i++)
+			//        {
+			//table[i] = (byte)i;
+			//        }
+			for (int i = 0; i < centileMin; i++)
+			{
+				table[i] = 0;
+			}
+			for (int i = centileMax + 1; i < table.Length; i++)
+			{
+				table[i] = 255;
+			}
+			for (int i = centileMin; i <= centileMax; i++)
+			{
+				table[i] = (byte)Math.Round((float)(i - centileMin) / (centileMax - centileMin) * 255);
+			}
+			return table;
 		}
 
 		public byte[] EqualizedHistogramTable(IEnumerable<byte> pixels)
@@ -569,21 +613,28 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
-		//percentiles
-		// fivepercent = 0.05*pixels.length;
-		// for(int i=0; i<histogram.length; i++)
-		// {
-		//	fivepercent -= histogram[i];
-		//  if(fivepercent<=0)
-		//  percentile05 = i;
-		// }
-		//
-		// for(int i=histogram.length-1; i>=0; i--)
-		// {
-		//	fivepercent -= histogram[i];
-		//  if(fivepercent<=0)
-		//  percentile95 = i;
-		// }
+		//histogramArray = GetHistogramArray(pixels);
+		//byte centileMin = Percentile(histogramArray, 2);
+		//byte centileMax = Percentile(histogramArray, 98);
+		//Console.WriteLine("inside");
+		//Console.WriteLine($"min: {pixels.Min()}, max: {pixels.Max()}");
+		//Console.WriteLine($"centile5: {centileMin}, centile95: {centileMax}");
+
+		public byte Percentile(int[] histogram, int percent)
+        {
+			byte result = 0;
+			int percentofLength = (int)Math.Round(percent / 100f * pixelValues.Count());
+            for (int i = 0; i < histogram.Length; i++)
+            {
+				percentofLength -= histogram[i];
+				if (percentofLength <= 0)
+				{
+					result = (byte)i;
+					break;
+				}
+            }
+			return result;
+		}
 
 		public int[] GetHistogram2(byte[] pixels)
 		{
