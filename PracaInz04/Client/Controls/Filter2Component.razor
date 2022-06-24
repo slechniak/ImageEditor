@@ -24,6 +24,12 @@
                     case FilterType.EdgeDetect:
                         @:Edge detection
                         break;
+                    case FilterType.SobelVertical:
+                        @:Sobel vertical
+                        break;
+                    case FilterType.SobelHorizontal:
+                        @:Sobel horizontal
+                        break;
                     default:
                         @fType
                         break;
@@ -95,14 +101,39 @@
 }
 @if(filterType == FilterType.Gaussian)
 {
-    <label for="customRange6" class="form-label pt-2 px-2">Kernel size: @kernelSize</label>
+    <label for="customRange6" class="form-label pt-2 px-2">Kernel size: @gaussSize</label>
     <input 
-        value="@kernelSize" @oninput="OnKernelGaussChange"
+        value="@gaussSize" @oninput="OnKernelGaussChange"
         min="@minKernelGauss" max="@maxKernelGauss" step="2"
         type="range" class="form-range m-2 w-75" id="customRange6">
     @*<input 
         value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
         type="number" class="form-control m-2 w-25" id="formControlInput5">*@
+}
+@*@if(filterType == FilterType.Custom)*@
+@if(new List<FilterType?>{ FilterType.Sharpen, FilterType.EdgeDetect,FilterType.Emboss, FilterType.SobelVertical,
+    FilterType.SobelHorizontal, FilterType.Custom}.Contains(filterType))
+{
+    <table class="table table-sm table-borderless w-75">
+      <tbody>
+        <tr>
+          <td><input @bind="customKernel[0]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[1]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[2]" @bind:event="oninput" type="number" class="form-control"></td>
+        </tr>
+        <tr>
+          <td><input @bind="customKernel[3]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[4]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[5]" @bind:event="oninput" type="number" class="form-control"></td>
+        </tr>
+        <tr>
+          <td><input @bind="customKernel[6]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[7]" @bind:event="oninput" type="number" class="form-control"></td>
+          <td><input @bind="customKernel[8]" @bind:event="oninput" type="number" class="form-control"></td>
+        </tr>
+      </tbody>
+    </table>
+    <button @onclick="CustomKernelFilter" class="btn btn-primary m-2">Use custom kernel</button>
 }
 <button @onclick="ApplyFilter" class="btn btn-primary">Save changes</button>
 
@@ -138,8 +169,11 @@
     public int minKernel = 1;
     public int maxKernel = 11;
 
+    public int gaussSize = 3;
     public int minKernelGauss = 3;
     public int maxKernelGauss = 5;
+
+    public float[] customKernel = new float[9];
 
     SKBitmap result;
 
@@ -196,6 +230,10 @@
                 //result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
                 result = ImageProc.FilterContrast(result, factor, inColor);
                 break;
+            case ImageProcessing.FilterType.Negative:
+                //result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
+                result = ImageProc.FilterNegative(result);
+                break;
             case ImageProcessing.FilterType.EqualizeHistogram:
                 //result = ImageProc.EqualizeHistogram(SService.bitmap);
                 result = ImageProc.EqualizeHistogram(result);
@@ -213,14 +251,43 @@
             case ImageProcessing.FilterType.Sharpen:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterSharpen(result);
+                customKernel = ImageProc.SharpenKernel();
                 break;
             case ImageProcessing.FilterType.Gaussian:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
-                result = ImageProc.FilterGaussian(result, kernelSize);
+                result = ImageProc.FilterGaussian(result, gaussSize);
                 break;
             case ImageProcessing.FilterType.EdgeDetect:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterEdgeDetect(result);
+                customKernel = ImageProc.EdgeDetectKernel();
+                break;
+            case ImageProcessing.FilterType.Emboss:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterEmboss(result);
+                customKernel = ImageProc.EmbossKernel();
+                break;
+            case ImageProcessing.FilterType.SobelVertical:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterSobelVertical(result);
+                customKernel = ImageProc.SobelVerticalKernel();
+                break;
+            case ImageProcessing.FilterType.SobelHorizontal:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterSobelHorizontal(result);
+                customKernel = ImageProc.SobelHorizontalKernel();
+                break;
+            case ImageProcessing.FilterType.Inferno:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterInferno(result);
+                break;
+            case ImageProcessing.FilterType.Turbo:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterTurbo(result);
+                break;
+            case ImageProcessing.FilterType.Custom:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterCustom(result, customKernel);
                 break;
         }
         //color = result.GetPixel(0, 0);
@@ -233,6 +300,7 @@
         //result = SService.bitmap;
         result = SService.bitmap?.Copy();
         filterTypeList = Enum.GetValues(typeof(FilterType));
+        customKernel = ImageProc.IdentityKernel();
     }
 
     public async Task OnFilterChosen(ChangeEventArgs e)
@@ -304,14 +372,26 @@
 
     private async Task OnKernelGaussChange(ChangeEventArgs e)
     {
-        kernelSize = Convert.ToInt32(e.Value);
+        gaussSize = Convert.ToInt32(e.Value);
         //factor = Math.Min(factor, maxFactor);
         //factor = Math.Max(factor, minFactor);
-        kernelSize = Math.Clamp(kernelSize, minKernelGauss, maxKernelGauss);
-        if (kernelSize % 2 != 0)
+        gaussSize = Math.Clamp(gaussSize, minKernelGauss, maxKernelGauss);
+        if (gaussSize % 2 != 0)
             await FilterAndShow();
         else
-            Console.WriteLine($"even kernel size {kernelSize}");
+            Console.WriteLine($"even kernel size {gaussSize}");
+    }
+
+    private async Task CustomKernelFilter()
+    {
+        string str = "customKernel:\n";
+        for (int i = 0; i < customKernel.Length; i++)
+        {
+            str += $"{customKernel[i]}, ";
+        }
+        Console.WriteLine(str);
+        filterType = FilterType.Custom;
+        await FilterAndShow();
     }
 
     private async Task OnInColorChange(ChangeEventArgs e)
