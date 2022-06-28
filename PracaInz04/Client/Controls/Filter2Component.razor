@@ -99,16 +99,34 @@
         value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
         type="number" class="form-control m-2 w-25" id="formControlInput5">*@
 }
-@if(filterType == FilterType.Gaussian)
+@*@if(filterType == FilterType.Gaussian)
 {
     <label for="customRange6" class="form-label pt-2 px-2">Kernel size: @gaussSize</label>
     <input 
         value="@gaussSize" @oninput="OnKernelGaussChange"
         min="@minKernelGauss" max="@maxKernelGauss" step="2"
         type="range" class="form-range m-2 w-75" id="customRange6">
-    @*<input 
-        value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
-        type="number" class="form-control m-2 w-25" id="formControlInput5">*@
+}*@
+@if(filterType == FilterType.Gaussian)
+{
+    <label for="customRange7" class="form-label pt-2 px-2">Kernel size: @gaussSize2</label>
+    <input 
+        value="@gaussSize2" @oninput="OnKernelGauss2Change"
+        min="@minKernelGauss2" max="@maxKernelGauss2" step="2"
+        type="range" class="form-range m-2 w-75" id="customRange7">
+    <label for="customRange8" class="form-label pt-2 px-2">Sigma: @sigma</label>
+    <input 
+        value="@sigma" @oninput="OnSigmaChange"
+        min="@minSigma" max="@maxSigma" step="0.1"
+        type="range" class="form-range m-2 w-75" id="customRange8">
+}
+@if(filterType == FilterType.Median)
+{
+    <label for="customRange9" class="form-label pt-2 px-2">Kernel size: @medianKernel</label>
+    <input 
+        value="@medianKernel" @oninput="OnMedianKernelChange"
+        min="@minMedianKernel" max="@maxMedianKernel" step="2"
+        type="range" class="form-range m-2 w-75" id="customRange9">
 }
 @*@if(filterType == FilterType.Custom)*@
 @if(new List<FilterType?>{ FilterType.Sharpen, FilterType.EdgeDetect,FilterType.Emboss, FilterType.SobelVertical,
@@ -172,6 +190,19 @@
     public int gaussSize = 3;
     public int minKernelGauss = 3;
     public int maxKernelGauss = 5;
+
+    public int gaussSize2 = 3;
+    //public int minKernelGauss2 = 3;
+    public int minKernelGauss2 = 1;
+    public int maxKernelGauss2 = 11;
+
+    public float sigma = 1;
+    public float minSigma = 0.1f;
+    public float maxSigma = 10;
+
+    public int medianKernel = 3;
+    public int minMedianKernel = 1;
+    public int maxMedianKernel = 11;
 
     public float[] customKernel = new float[9];
 
@@ -253,9 +284,14 @@
                 result = ImageProc.FilterSharpen(result);
                 customKernel = ImageProc.SharpenKernel();
                 break;
+            //case ImageProcessing.FilterType.Gaussian:
+            //    //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+            //    result = ImageProc.FilterGaussian(result, gaussSize);
+            //    break;
             case ImageProcessing.FilterType.Gaussian:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
-                result = ImageProc.FilterGaussian(result, gaussSize);
+                Console.WriteLine($"gausSize2: {gaussSize2}, sigma: {sigma}");
+                result = ImageProc.FilterGaussian2(result, gaussSize2, sigma);
                 break;
             case ImageProcessing.FilterType.EdgeDetect:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
@@ -284,6 +320,10 @@
             case ImageProcessing.FilterType.Turbo:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterTurbo(result);
+                break;
+            case ImageProcessing.FilterType.Median:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterMedian(result, medianKernel);
                 break;
             case ImageProcessing.FilterType.Custom:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
@@ -380,6 +420,39 @@
             await FilterAndShow();
         else
             Console.WriteLine($"even kernel size {gaussSize}");
+    }
+
+    private async Task OnKernelGauss2Change(ChangeEventArgs e)
+    {
+        gaussSize2 = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        gaussSize2 = Math.Clamp(gaussSize2, minKernelGauss2, maxKernelGauss2);
+        if (gaussSize2 % 2 != 0)
+            await FilterAndShow();
+        else
+            Console.WriteLine($"even kernel size {gaussSize2}");
+    }
+
+    private async Task OnMedianKernelChange(ChangeEventArgs e)
+    {
+        medianKernel = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        medianKernel = Math.Clamp(medianKernel, minMedianKernel, maxMedianKernel);
+        if (medianKernel % 2 != 0)
+            await FilterAndShow();
+        else
+            Console.WriteLine($"even kernel size {gaussSize2}");
+    }
+
+    private async Task OnSigmaChange(ChangeEventArgs e)
+    {
+        sigma = (float)Convert.ToDouble(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        sigma = Math.Clamp(sigma, minSigma, maxSigma);
+        await FilterAndShow();
     }
 
     private async Task CustomKernelFilter()

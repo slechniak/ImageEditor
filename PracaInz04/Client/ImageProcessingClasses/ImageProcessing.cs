@@ -33,6 +33,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			SobelVertical,
 			Inferno,
 			Turbo,
+			Median,
 			Custom
 		}
 
@@ -50,6 +51,13 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		float[] pixelsH, pixelsS, pixelsL;
 		float minL, maxL;
+
+		List<byte> pixelsR;
+		List<byte> pixelsG;
+		List<byte> pixelsB;
+
+		int[,] indexTable;
+		SKColor[] pixelTable;
 
 		public ImageProcessing(IJSRuntime jSRuntime, StateService sService)
 		{
@@ -270,6 +278,72 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			}
 
 			return kernel;
+		}
+
+		public float Gauss(int x, int y, float sigma)
+        {
+			return (float)(1 / (2d * Math.PI * sigma * sigma) * 
+				Math.Pow(Math.E,
+				-((x*x+y*y) / (2d * sigma * sigma))));
+        }
+
+		public SKBitmap FilterGaussian2(SKBitmap bitmap, int kernelSize, float sigma)
+		{
+			float[] kernel = GaussianKernel2(kernelSize, sigma);
+			ShowKernel(kernel, "gaussian2 krenel");
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+				bitmap2 = bitmap;
+				SService.newBitmap = false;
+			}
+			int offset = (int)Math.Floor(kernelSize / 2f);
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
+				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
+				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public float[] GaussianKernel2(int kernelSize, float sigma)
+		{
+			float[] kernel = new float[kernelSize * kernelSize];
+			int k = (kernelSize - 1) / 2;
+
+			int n = 0;
+            for (int i = 0; i < kernelSize; i++)
+            {
+				for (int j = 0; j < kernelSize; j++)
+				{
+					kernel[n] = Gauss(i - k, j - k, sigma);
+                    //Console.WriteLine($"kernel[{n}](i, j)=({i}, {j}) = Gauss({i - k}, {j - k}) = {kernel[n]}");
+					n++;
+				}
+			}
+			
+			float sum = kernel.Sum();
+			for (int i = 0; i < kernel.Length; i++)
+			{
+				kernel[i] /= sum;
+			}
+
+			return kernel;
+		}
+
+		public void ShowKernel(float[] kernel, string title = "kernel:\n")
+		{
+			string s = title + $" ({kernel.Length}):\n";
+			int counter = 1;
+			int kernelSize = (int)Math.Round(Math.Sqrt(kernel.Length)); ;
+			for (int i = 0; i < kernel.Length; i++)
+			{
+				s += $"{kernel[i].ToString("F4")}, ";
+				if (counter == kernelSize)
+				{
+					s += "\n";
+					counter = 0;
+				}
+				counter++;
+			}
+			Console.WriteLine(s);
 		}
 
 		public SKBitmap FilterAverage(SKBitmap bitmap, int kernelSize)
@@ -578,8 +652,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			if (SService.newBitmap)
 			{
 				bitmap2 = FilterGrayscale(bitmap);
-                //pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
-                pixelValues = bitmap2.Pixels.Select(x => x.Red);
+				//pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
+				SKColor[] pixels = bitmap2.Pixels;
+                pixelsR = pixels.Select(x => x.Red).ToList();
+                pixelsG = pixels.Select(x => x.Green).ToList();
+                pixelsB = pixels.Select(x => x.Blue).ToList();
 			}
 			byte[] table = ContrastTable1(factor, pixelValues);
             //byte[] table = ContrastTable2(factor, pixelValues);
@@ -588,6 +665,590 @@ namespace PracaInz04.Client.ImageProcessingClasses
             //ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
             return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
+		}
+
+		public static void AddSorted<T>(List<T> list, T item) where T : IComparable<T>
+		{
+			if (list.Count == 0)
+			{
+				list.Add(item);
+				return;
+			}
+			if (list[list.Count - 1].CompareTo(item) <= 0)
+			{
+				list.Add(item);
+				return;
+			}
+			if (list[0].CompareTo(item) >= 0)
+			{
+				list.Insert(0, item);
+				return;
+			}
+			int index = list.BinarySearch(item);
+			if (index < 0)
+				index = ~index;
+			list.Insert(index, item);
+		}
+
+		private int[,] GetIndexTable(int width, int height)
+        {
+			int[,] table = new int[width, height];
+			int index = 0;
+            for (int i = 0; i < height; i++)
+            {
+				//int widthMultiple = i * width;
+
+				for (int j = 0; j < width; j++)
+                {
+					//table[i, j] = widthMultiple + j;
+					table[j, i] = index;
+                    //Console.WriteLine($"table[{j}, {i}] = {index}");
+					index++;
+				}
+            }
+			return table;
+        }
+
+		private SKColor[] GetNeighbourhood(SKPointI start, SKPointI end, int windowLength)
+		{
+			//SKColor[] array = new SKColor[kernelSize* kernelSize];
+			SKColor[] array = new SKColor[windowLength];
+			int index = 0;
+			for (int i = start.X; i <= end.X; i++)
+			{
+				for (int j = start.Y; j <= end.Y; j++)
+				{
+					array[index] = pixelTable[indexTable[i, j]];
+					index++;
+				}
+			}
+			return array;
+		}
+
+		private (List<byte> windowR, List<byte> windowG, List<byte> windowB, List<SKColor> toRemove) GetWindowSorted
+			(SKPointI start, SKPointI end)
+		{
+			//SKColor[] array = new SKColor[kernelSize* kernelSize];
+			var windowR = new List<byte>();
+			var windowG = new List<byte>();
+			var windowB = new List<byte>();
+			var toRemove = new List<SKColor>();
+			var pixel = new SKColor();
+
+			for (int i = start.X; i <= end.X; i++)
+			{
+				for (int j = start.Y; j <= end.Y; j++)
+				{
+					pixel = pixelTable[indexTable[start.X, j]];
+					//windowR.Add(pixel.Red);
+					//windowG.Add(pixel.Green);
+					//windowB.Add(pixel.Blue);
+					AddSorted(windowR, pixel.Red);
+					AddSorted(windowG, pixel.Green);
+					AddSorted(windowB, pixel.Blue);
+					toRemove.Add(pixel);
+				}
+			}
+			//windowR.Sort();
+			//windowG.Sort();
+			//windowB.Sort();
+			return (windowR, windowG, windowB, toRemove);
+		}
+
+		// og, improved start, end
+		public SKBitmap FilterMedian2(SKBitmap bitmap, int kernelSize)
+		{
+			//bitmap2 = bitmap;
+			Stopwatch stopwatch = new Stopwatch();
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+
+				bitmap2 = bitmap;
+
+				stopwatch.Reset();
+				stopwatch.Start();
+
+				indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
+
+				stopwatch.Stop();
+				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
+				stopwatch.Reset();
+				stopwatch.Start();
+
+				pixelTable = bitmap2.Pixels;
+
+				stopwatch.Stop();
+				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
+
+				SService.newBitmap = false;
+			}
+			stopwatch.Reset();
+			stopwatch.Start();
+			Console.WriteLine("Start: result");
+
+			SKBitmap result = new SKBitmap(bitmap2.Info);
+			SKColor[] resultPixels = new SKColor[pixelTable.Length];
+
+			SKPointI start = new SKPointI();
+			SKPointI end = new SKPointI();
+			SKColor[] window;
+			SKColor medianPixel;
+			int k = (int)Math.Floor(kernelSize / 2f);
+			int windowLength = kernelSize * kernelSize;
+			int medianIndex = (int)Math.Round(windowLength / 2f);
+			Stopwatch stopwatch2 = new Stopwatch();
+			Stopwatch stopwatch3 = new Stopwatch();
+			Stopwatch stopwatch4 = new Stopwatch();
+			for (int j = k; j < bitmap2.Height - k; j++)
+			{
+				stopwatch2.Start();
+
+				start.Y = j - k;
+				end.Y = j + k;
+
+				stopwatch2.Stop();
+
+				for (int i = k; i < bitmap2.Width - k; i++)
+				{
+					stopwatch2.Start();
+
+					//code
+					//start = new SKPointI(i - k, j - k);
+					//end = new SKPointI(i + k, j + k);
+					start.X = i - k;
+					end.X = i + k;
+
+					stopwatch2.Stop();
+					stopwatch3.Start();
+
+					//code
+					window = GetNeighbourhood(start, end, windowLength);
+
+					stopwatch3.Stop();
+					stopwatch4.Start();
+
+					//v3 fastest, half the time of v1
+					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
+					byte newRed = window[medianIndex].Red;
+					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
+					byte newGreen = window[medianIndex].Green;
+					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
+					byte newBlue = window[medianIndex].Blue;
+					medianPixel = new SKColor(newRed, newGreen, newBlue);
+					stopwatch4.Stop();
+					resultPixels[indexTable[i, j]] = medianPixel;
+				}
+			}
+			result.Pixels = resultPixels;
+
+			stopwatch.Stop();
+			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+
+			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
+			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
+			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
+
+			return result;
+		}
+
+		// filter median with measure time
+		public SKBitmap FilterMedian3(SKBitmap bitmap, int kernelSize)
+		{
+			void MeasureTime(Stopwatch sw, Action action)
+			{
+				sw.Start();
+				action();
+				sw.Stop();
+			}
+
+			//bitmap2 = bitmap;
+			Stopwatch stopwatch = new Stopwatch();
+			if (SService.newBitmap)
+			{
+				bitmap2 = bitmap;
+
+				stopwatch.Reset();
+				MeasureTime(stopwatch, () =>
+				{
+					indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
+				});
+				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
+
+				stopwatch.Reset();
+				MeasureTime(stopwatch, () =>
+				{
+					pixelTable = bitmap2.Pixels;
+				});
+				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
+
+				SService.newBitmap = false;
+			}
+
+			Stopwatch stopwatch2 = new Stopwatch();
+			Stopwatch stopwatch3 = new Stopwatch();
+			Stopwatch stopwatch4 = new Stopwatch();
+
+			SKBitmap result = new SKBitmap(bitmap2.Info);
+
+			stopwatch.Reset();
+			MeasureTime(stopwatch, () =>
+			{
+				Console.WriteLine("Start: result");
+
+				SKColor[] resultPixels = new SKColor[pixelTable.Length];
+				SKPointI start = new SKPointI();
+				SKPointI end = new SKPointI();
+				SKColor[] window = new SKColor[0];
+				SKColor medianPixel = new SKColor();
+				int k = (int)Math.Floor(kernelSize / 2f);
+				int windowLength = kernelSize * kernelSize;
+				int medianIndex = (int)Math.Round(windowLength / 2f);
+				for (int j = k; j < bitmap2.Height - k; j++)
+				{
+					MeasureTime(stopwatch2, () =>
+					{
+						start.Y = j - k;
+						end.Y = j + k;
+					});
+
+					for (int i = k; i < bitmap2.Width - k; i++)
+					{
+						MeasureTime(stopwatch2, () =>
+						{
+							start.X = i - k;
+							end.X = i + k;
+						});
+
+						MeasureTime(stopwatch3, () =>
+						{
+							window = GetNeighbourhood(start, end, windowLength);
+						});
+
+						MeasureTime(stopwatch3, () =>
+						{
+							//v3 fastest, half the time of v1
+							Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
+							byte newRed = window[medianIndex].Red;
+							Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
+							byte newGreen = window[medianIndex].Green;
+							Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
+							byte newBlue = window[medianIndex].Blue;
+							medianPixel = new SKColor(newRed, newGreen, newBlue);
+						});
+						resultPixels[indexTable[i, j]] = medianPixel;
+					}
+				}
+				result.Pixels = resultPixels;
+
+			});
+			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+
+			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
+			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
+			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
+
+			return result;
+		}
+
+		// og, improved start, end, latest working
+		public SKBitmap FilterMedian4(SKBitmap bitmap, int kernelSize)
+		{
+			Stopwatch stopwatch = new Stopwatch();
+
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+
+				//code
+				bitmap2 = bitmap;
+
+				stopwatch.Reset();
+				stopwatch.Start();
+
+				//code
+				indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
+
+				stopwatch.Stop();
+				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
+				stopwatch.Reset();
+				stopwatch.Start();
+
+				//code
+				pixelTable = bitmap2.Pixels;
+
+				stopwatch.Stop();
+				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
+
+				//code
+				SService.newBitmap = false;
+			}
+
+			stopwatch.Reset();
+			stopwatch.Start();
+			Console.WriteLine("Start: result");
+
+			//code
+			SKBitmap result = new SKBitmap(bitmap2.Info);
+			SKColor[] resultPixels = new SKColor[pixelTable.Length];
+			SKPointI start = new SKPointI();
+			SKPointI end = new SKPointI();
+			SKColor[] window;
+			SKColor medianPixel;
+			int k = (int)Math.Floor(kernelSize / 2f);
+			int windowLength = kernelSize * kernelSize;
+			int medianIndex = (int)Math.Round(windowLength / 2f);
+			Stopwatch stopwatch2 = new Stopwatch();
+			Stopwatch stopwatch3 = new Stopwatch();
+			Stopwatch stopwatch4 = new Stopwatch();
+
+			for (int j = k; j < bitmap2.Height - k; j++)
+			{
+				stopwatch2.Start();
+
+				//code
+				start.Y = j - k;
+				end.Y = j + k;
+
+				stopwatch2.Stop();
+
+				for (int i = k; i < bitmap2.Width - k; i++)
+				{
+					stopwatch2.Start();
+
+					//code
+					start.X = i - k;
+					end.X = i + k;
+
+					stopwatch2.Stop();
+					stopwatch3.Start();
+
+					//code
+					window = GetNeighbourhood(start, end, windowLength);
+
+					stopwatch3.Stop();
+					stopwatch4.Start();
+
+					//code
+					//v3 fastest, half the time of v1
+					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
+					byte newRed = window[medianIndex].Red;
+					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
+					byte newGreen = window[medianIndex].Green;
+					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
+					byte newBlue = window[medianIndex].Blue;
+					medianPixel = new SKColor(newRed, newGreen, newBlue);
+					resultPixels[indexTable[i, j]] = medianPixel;
+
+					stopwatch4.Stop();
+				}
+			}
+			//code
+			result.Pixels = resultPixels;
+
+			stopwatch.Stop();
+			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+
+			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
+			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
+			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
+
+			return result;
+		}
+
+		// fastest, still slow
+		public SKBitmap FilterMedian(SKBitmap bitmap, int kernelSize)
+		{
+			if (SService.newBitmap)
+			{
+				bitmap2 = bitmap;
+				indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
+				pixelTable = bitmap2.Pixels;
+				SService.newBitmap = false;
+			}
+
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+			Console.WriteLine("Start: result");
+
+			//code
+			SKBitmap result = new SKBitmap(bitmap2.Info);
+			SKColor[] resultPixels = new SKColor[pixelTable.Length];
+			SKPointI start = new SKPointI();
+			SKPointI end = new SKPointI();
+			int k = (int)Math.Floor(kernelSize / 2f);
+			int windowLength = kernelSize * kernelSize;
+			int medianIndex = (int)Math.Round(windowLength / 2f);
+			List<byte> windowR;
+			List<byte> windowG;
+			List<byte> windowB;
+			List<SKColor> toRemove;
+			SKColor pixel;
+
+			start = new SKPointI(0, 0);
+			end = new SKPointI(2 * k, 2 * k);
+
+			for (int j = k; j < bitmap2.Height - k; j++)
+			{
+				(windowR, windowG, windowB, toRemove) = GetWindowSorted(start, end);
+				resultPixels[indexTable[k, j]] = 
+					new SKColor(windowR[medianIndex], windowG[medianIndex], windowB[medianIndex]);
+				start.X++;
+				end.X++;
+
+				for (int i = k + 1; i < bitmap2.Width - k; i++)
+				{
+                    for (int n = 1; n <= kernelSize; n++)
+                    {
+						pixel = toRemove[0];
+						windowR.Remove(pixel.Red);
+						windowG.Remove(pixel.Green);
+						windowB.Remove(pixel.Blue);
+						toRemove.RemoveAt(0);
+                    }
+
+                    for (int n = start.Y; n <= end.Y; n++)
+                    {
+						//int index = 0;
+						//try
+                        //{
+						//	index = indexTable[end.X, n];
+                        //}
+                        //catch (Exception)
+                        //{
+                        //    Console.WriteLine($"{indexTable.GetLength(0)-1}, {indexTable.GetLength(1)-1}, " +
+                        //        $"{end.X}, {n}");
+						//	throw;
+                        //}
+						//pixel = pixelTable[index];
+
+						pixel = pixelTable[indexTable[end.X, n]];
+                        AddSorted(windowR, pixel.Red);
+						AddSorted(windowG, pixel.Green);
+						AddSorted(windowB, pixel.Blue);
+						toRemove.Add(pixel);
+					}
+
+					resultPixels[indexTable[i, j]] =
+					new SKColor(windowR[medianIndex], windowG[medianIndex], windowB[medianIndex]);
+
+					start.X++;
+					end.X++;
+				}
+
+				start.X = 0;
+				end.X = 2 * k;
+				start.Y++;
+				end.Y++;
+			}
+			result.Pixels = resultPixels;
+
+			stopwatch.Stop();
+			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+
+			return result;
+		}
+
+		// og
+		public SKBitmap FilterMedian1(SKBitmap bitmap, int kernelSize)
+		{
+			//bitmap2 = bitmap;
+			Stopwatch stopwatch = new Stopwatch();
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+
+				//code(
+				bitmap2 = bitmap;
+				//code)
+				stopwatch.Reset();
+				stopwatch.Start();
+				//code(
+                indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
+				//code)
+				stopwatch.Stop();
+				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
+				stopwatch.Reset();
+				stopwatch.Start();
+				//code(
+				pixelTable = bitmap2.Pixels;
+				//code)
+				stopwatch.Stop();
+				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
+				//code(
+				SService.newBitmap = false;
+				//code)
+			}
+			stopwatch.Reset();
+			stopwatch.Start();
+			Console.WriteLine("Start: result");
+
+			SKBitmap result = new SKBitmap(bitmap2.Info);
+            SKColor[] resultPixels = new SKColor[pixelTable.Length];
+
+			SKPointI start, end;
+			SKColor[] window;
+			SKColor medianPixel;
+			int k = (int)Math.Floor(kernelSize / 2f);
+			int windowLength = kernelSize * kernelSize;
+			int medianIndex = (int)Math.Round(windowLength / 2f);
+			Stopwatch stopwatch2 = new Stopwatch();
+			Stopwatch stopwatch3 = new Stopwatch();
+			Stopwatch stopwatch4 = new Stopwatch();
+			for (int i = 0; i < bitmap2.Width; i++)
+            {
+				for (int j = 0; j < bitmap2.Height; j++)
+				{
+					//start = new SKPointI(Math.Clamp(i - k, 0, bitmap.Width - 1),
+					//					Math.Clamp(j - k, 0, bitmap.Height - 1));
+					stopwatch2.Start();
+					//code(
+					start = new SKPointI(Math.Max(i - k, 0),
+										Math.Max(j - k, 0));
+					end = new SKPointI(Math.Min(i + k, bitmap.Width - 1),
+										Math.Min(j + k, bitmap.Height - 1));
+					//code)
+					stopwatch2.Stop();
+					stopwatch3.Start();
+					//code(
+					window = GetNeighbourhood(start, end, windowLength);
+					//code)
+					stopwatch3.Stop();
+					//medianIndex = (int)Math.Round(window.Length/2f);
+					stopwatch4.Start();
+					//code(
+					//v1
+					//medianPixel = new SKColor(window.OrderBy(x => x.Red).ElementAt(medianIndex).Red,
+					//						window.OrderBy(x => x.Green).ElementAt(medianIndex).Green,
+					//						window.OrderBy(x => x.Blue).ElementAt(medianIndex).Blue);
+					//v2 slower than v1
+					//medianPixel = new SKColor(window.OrderBy(x => x.Red).ToList()[medianIndex].Red,
+					//						window.OrderBy(x => x.Green).ToList()[medianIndex].Green,
+					//						window.OrderBy(x => x.Blue).ToList()[medianIndex].Blue);
+					//v3 fastest, half the time of v1
+					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
+					byte newRed = window[medianIndex].Red;
+					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
+					byte newGreen = window[medianIndex].Green;
+					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
+					byte newBlue = window[medianIndex].Blue;
+					medianPixel = new SKColor(newRed, newGreen, newBlue);
+					//code)
+					stopwatch4.Stop();
+					resultPixels[indexTable[i, j]] = medianPixel;
+                    //Console.WriteLine($"resultPixels[indexTable[i = {i}, j = {j}] = {indexTable[i, j]}] = ({medianPixel})");
+				}
+			}
+			result.Pixels = resultPixels;
+
+			stopwatch.Stop();
+			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+			
+			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
+			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
+			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
+
+			return result;
 		}
 
 		public SKBitmap EqualizeHistogram(SKBitmap bitmap)
@@ -1069,8 +1730,8 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			}
 			return table;
 		}
-
-		public void ShowMatrix(float[] a, string title = "matrix title")
+		
+		public void ShowMatrix(float[] a, string title = "matrix: ")
 		{
 			string s = "";
 			int counter = 1;
