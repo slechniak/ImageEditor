@@ -135,6 +135,12 @@ namespace PracaInz04.Client.IndexedDbClasses
             return maxKey + 1;
         }
 
+        public async Task DeleteImageFromIDb(int imageId)
+        {
+            var deleteResult = await IndexedDbContext.DeleteByKey<int, ImageResized2>(imageId);
+            var deleteResult2 = await IndexedDbContext.DeleteByKey<int, ImageOriginal2>(imageId);
+        }
+
         public async Task<ImageResized2> FetchImageResized2(int imageId)
         {
             var result = await IndexedDbContext.GetByKey<int, ImageResized2>(imageId);

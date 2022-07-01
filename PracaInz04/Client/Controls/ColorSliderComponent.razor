@@ -63,7 +63,7 @@
     </div>
 </div>
 
-<label for="customRange4" class="form-label m-0">Multi-color</label>
+@*<label for="customRange4" class="form-label m-0">Multi-color</label>*@
 <div class="d-flex align-items-center justify-content-center mb-2">
     <input 
         value="@multiShift" @oninput="(e) => OnMultiShiftChange(e)"
@@ -76,8 +76,8 @@
 
 @*<div class="d-flex align-items-center justify-content-evenly w-100">*@
 <div class="d-flex align-items-center justify-content-center my-2">
-    <button @onclick="ResetShifts" class="btn btn-primary mx-1">Reset values</button>
-    <button @onclick="ApplyFilter" class="btn btn-primary mx-1">Save changes</button>
+    <button @onclick="ResetShifts" class="btn btn-dark mx-1">Reset values</button>
+    <button @onclick="ApplyFilter" class="btn btn-dark mx-1">Save changes</button>
 </div>
 
 @code {

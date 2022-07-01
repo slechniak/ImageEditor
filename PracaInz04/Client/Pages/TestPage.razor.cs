@@ -13,6 +13,7 @@ using PracaInz04.Client.Services;
 using PracaInz04.Client.LocalStorageClasses;
 using PracaInz04.Client.IndexedDbClasses;
 using PracaInz04.Client.ImageProcessingClasses;
+//using OpenCvSharp;
 
 namespace PracaInz04.Client.Pages
 {
@@ -100,6 +101,41 @@ namespace PracaInz04.Client.Pages
 
         private Dictionary<string, object> CanvasAttributes { get; set; }
         //new(){{ "width", "500" },{ "height", "500" }};
+
+        //public async Task OpenCVSharpAction()
+        //{
+        //    int kSize = 3;
+        //    var skData = sKBitmap.Encode(SKEncodedImageFormat.Png, 100);
+        //    byte[] imageBytes = skData.ToArray();
+        //    using var srcMat = Cv2.ImDecode(imageBytes, ImreadModes.Unchanged);
+        //    using var dstMat = new Mat();
+        //    Cv2.MedianBlur(srcMat, dstMat, kSize);
+        //    byte[] bytes1 = dstMat.ToBytes(".png");
+        //    AddBitmap(SKBitmap.Decode(bytes1));
+        //    skiaView.Invalidate();
+        //    //using var grayMat = new Mat();
+        //    //Cv2.CvtColor(srcMat, grayMat, ColorConversionCodes.BGR2GRAY);
+        //    //using var dstMat = new Mat();
+        //    //Cv2.MedianBlur(grayMat, dstMat, kSize);
+        //}
+
+        public async Task MedianJS(int k)
+        {
+            //sKBitmap = SKBitmap.Decode(await JS.InvokeAsync<byte[]>("medianFilter", sKBitmap.Bytes,
+            //    sKBitmap.Width, sKBitmap.Height, 3));
+            var bytes = sKBitmap.Bytes;
+            var buffer = await JS.InvokeAsync<byte[]>("medianFilter", bytes,
+                sKBitmap.Width, sKBitmap.Height, k);
+            unsafe
+            {
+                fixed (byte* ptr = buffer)
+                {
+                    sKBitmap.SetPixels((IntPtr)ptr);
+                }
+            }
+            AddBitmap(sKBitmap);
+            skiaView.Invalidate();
+        }
 
         public void ReloadBitmap()
         {
@@ -241,7 +277,7 @@ namespace PracaInz04.Client.Pages
             infoMiddleY = info.Height / 2;
             //infoMiddleY = info.Rect.MidX;
 
-            canvas.Clear();
+            canvas.Clear(SKColors.Black);
 
             // nie obliczac bitmapRect od nowa, jezeli nie zmieniła się scroll skala
             //if (scrollScaleChanged || isMiddle)

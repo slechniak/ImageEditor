@@ -1,4 +1,5 @@
-﻿@page "/testpage"
+﻿@*@page "/testpage"*@
+@page "/editor"
 
 <div class="container-fluid bg-primary h-100">
     @*<div hidden @onkeypress="OnKeyPressed"></div>*@
@@ -6,7 +7,7 @@
 	<div class="row bg-success h-100">
         @*had h-100*@
 		@*<div class="col-md-9 bg-warning d-flex align-items-center justify-content-center mh-100">*@
-		<div class="col-md-9 bg-warning d-flex align-items-center justify-content-center mh-100">
+		<div class="col-md-9 bg-black d-flex align-items-center justify-content-center p-0 mh-100">
             @if(ImageName!=null && ImageName!="")
             {
                 @*<img class="mw-100 mh-100" src="images/placeholder.svg" alt="Card image cap">*@
@@ -29,46 +30,47 @@
                     OnPaintSurface="@OnPaintSurface"
                     IgnorePixelScaling="false" 
                     @attributes="CanvasAttributes" 
-                    class="border mw-100 mh-100 w-100 h-100"
+                    class="mw-100 mh-100 w-100 h-100"
                     style="image-rendering: pixelated;"/>
             }
             else
             {   
                 <div class="text-center">
                     <UploadImageComponent ParentMethod="LoadImageToEdit"></UploadImageComponent>
-                    <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>
+                    @*<div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>*@
+                    <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("gallery")'>Choose image from Image List</div>
                 </div>
             }
 		</div>
 		@*<div class="col-md-3 bg-info d-flex flex-column overflow-auto mh-100 align-items-center">*@
-		<div class="col-md-3 bg-info d-flex flex-column overflow-auto mh-100 align-items-center">
+		<div class="col-md-3 d-flex flex-column overflow-auto mh-100 align-items-center" style="background-color: indigo; color: #d7d7d7">
 			@*<Tools2Component></Tools2Component>*@
             
             <p class="fs-6 fw-bold m-2">@ImageName</p>
-            <button class="btn btn-primary" @onclick="ReloadBitmap">Reload bitmap</button>
+            <button class="btn btn-dark" @onclick="ReloadBitmap">Reload bitmap</button>
             <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
-                    <button class="btn btn-primary" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
-                    <button class="btn btn-primary" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
+                    <button class="btn btn-dark" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
+                    <button class="btn btn-dark" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
             </div>
             <div class="form-check m-2">
               <input class="form-check-input" type="checkbox" value="@showPixels" id="flexCheckChecked" checked
                     @onchange="OnChangeShowPixels">
               <label class="form-check-label" for="flexCheckChecked">Show pixels</label>
             </div>
-            <button class="btn btn-primary m-2 w-75" @onclick="ToggleCollapse">Toggle</button>
+            <button class="btn btn-dark m-2 w-75" @onclick="ToggleCollapse">Toggle</button>
             @if(!collapse)
             {
-                <button class="btn btn-primary m-2 w-50" @onclick="ResetPanOffset">Center image</button>
-                <button class="btn btn-primary m-2 w-50" @onclick="ResetScale">Reset scale</button>
-                <button class="btn btn-primary m-2 w-50" @onclick="CropImage">Crop image</button>
-                @*<button class="btn btn-primary m-2 w-50" @onclick="RotateImage">Rotate image</button>*@
+                <button class="btn btn-dark m-2 w-50" @onclick="ResetPanOffset">Center image</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="ResetScale">Reset scale</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="CropImage">Crop image</button>
+                @*<button class="btn btn-dark m-2 w-50" @onclick="RotateImage">Rotate image</button>*@
                 <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
-                    <button class="btn btn-primary" @onclick="() => RotateImage(-1)">Rotate -90</button>
-                    <button class="btn btn-primary" @onclick="() => RotateImage(1)">Rotate 90</button>
+                    <button class="btn btn-dark" @onclick="() => RotateImage(-1)">Rotate -90</button>
+                    <button class="btn btn-dark" @onclick="() => RotateImage(1)">Rotate 90</button>
                 </div>
-                <button class="btn btn-primary m-2 w-50" @onclick="() => FlipImage(true)">Flip horizontally</button>
-                <button class="btn btn-primary m-2 w-50" @onclick="() => FlipImage(false)">Flip vertically</button>
-                @*<button class="btn btn-primary m-2 w-50" @onclick="() => TiltImage(5)">Tilt image</button>*@
+                <button class="btn btn-dark m-2 w-50" @onclick="() => FlipImage(true)">Flip horizontally</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="() => FlipImage(false)">Flip vertically</button>
+                @*<button class="btn btn-dark m-2 w-50" @onclick="() => TiltImage(5)">Tilt image</button>*@
             
                 @*<label for="customRange1" class="form-label">Tilt angle</label>
                 <input 
@@ -85,13 +87,17 @@
                 <input 
                     value="@tiltAngle" @onchange="OnTiltAngleChange"
                     type="number" class="form-control m-2 w-25" id="formControlInput1">
-                <button class="btn btn-primary m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
 
-                <button class="btn btn-primary m-2 w-50" @onclick="ModalShowDownloadComponent">Download</button>
-                <button class="btn btn-primary m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
-                @*<button class="btn btn-primary m-2 w-50" @onclick="@(() => Progress(SaveImage, message: "Saving..."))">Save image</button>*@
-                <button class="btn btn-primary m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
-                @*<button class="btn btn-primary m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
+                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowDownloadComponent">Download</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
+                @*<button class="btn btn-dark m-2 w-50" @onclick="@(() => Progress(SaveImage, message: "Saving..."))">Save image</button>*@
+                <button class="btn btn-dark m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
+                @*<button class="btn btn-dark m-2 w-50" @onclick="OpenCVSharpAction">OpenCVSharp</button>*@
+                @*<button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(3)">Medianx3</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(5)">Medianx5</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(7)">Medianx7</button>*@
+                @*<button class="btn btn-dark m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
             }
             <Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
             <HistogramComponent></HistogramComponent>

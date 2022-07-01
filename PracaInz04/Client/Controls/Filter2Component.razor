@@ -4,9 +4,9 @@
 
 <p class="fs-6 fw-bold m-2">Filters</p>
 <div class="input-group m-2 w-75">
-    <span class="input-group-text">Filter:</span>
+    <span class="input-group-text bg-dark text-light border-0">Filter:</span>
     @*<select @bind="filterType" class="form-select">*@
-    <select @onchange="OnFilterChosen" class="form-select">
+    <select @onchange="OnFilterChosen" class="form-select bg-dark text-light border-0 border-start">
         @*<option value="null" disabled selected>Choose filter</option>*@
         <option value="" selected>None</option>
         @foreach(var fType in filterTypeList)
@@ -50,7 +50,7 @@
         value="@treshold" @onchange="OnTresholdChange"
         type="number" class="form-control m-2 w-25" id="formControlInput1">
 }
-@if(filterType == FilterType.Brightness)
+@if(filterType == FilterType.Brightness || filterType == FilterType.Opacity)
 {
     <label for="customRange2" class="form-label pt-2 px-2">Level</label>
     <input 
@@ -128,6 +128,14 @@
         min="@minMedianKernel" max="@maxMedianKernel" step="2"
         type="range" class="form-range m-2 w-75" id="customRange9">
 }
+@if(filterType == FilterType.Erosion || filterType == FilterType.Dilation)
+{
+    <label for="customRange10" class="form-label pt-2 px-2">Kernel radius: @radius</label>
+    <input 
+        value="@radius" @oninput="OnRadiusChange"
+        min="@minRadius" max="@maxRadius" step="1"
+        type="range" class="form-range m-2 w-75" id="customRange10">
+}
 @*@if(filterType == FilterType.Custom)*@
 @if(new List<FilterType?>{ FilterType.Sharpen, FilterType.EdgeDetect,FilterType.Emboss, FilterType.SobelVertical,
     FilterType.SobelHorizontal, FilterType.Custom}.Contains(filterType))
@@ -151,9 +159,9 @@
         </tr>
       </tbody>
     </table>
-    <button @onclick="CustomKernelFilter" class="btn btn-primary m-2">Use custom kernel</button>
+    <button @onclick="CustomKernelFilter" class="btn btn-dark m-2">Use custom kernel</button>
 }
-<button @onclick="ApplyFilter" class="btn btn-primary">Save changes</button>
+<button @onclick="ApplyFilter" class="btn btn-dark">Save changes</button>
 
 @code {
     [Parameter]
@@ -204,6 +212,10 @@
     public int minMedianKernel = 1;
     public int maxMedianKernel = 11;
 
+    public int radius = 1;
+    public int minRadius = 1;
+    public int maxRadius = 11;
+
     public float[] customKernel = new float[9];
 
     SKBitmap result;
@@ -212,7 +224,11 @@
 
     public async Task ApplyFilter()
     {
-        await FilterAndShow();
+        //og, worked
+        //await FilterAndShow();
+        //await AddBitmap.InvokeAsync(result);
+
+        await ShowBitmap.InvokeAsync(result);
         await AddBitmap.InvokeAsync(result);
     }
 
@@ -324,6 +340,18 @@
             case ImageProcessing.FilterType.Median:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterMedian(result, medianKernel);
+                break;
+            case ImageProcessing.FilterType.Erosion:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterErode(result, radius);
+                break;
+            case ImageProcessing.FilterType.Dilation:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterDilate(result, radius);
+                break;
+            case ImageProcessing.FilterType.Opacity:
+                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
+                result = ImageProc.FilterOpacity(result, level);
                 break;
             case ImageProcessing.FilterType.Custom:
                 //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
@@ -452,6 +480,15 @@
         //factor = Math.Min(factor, maxFactor);
         //factor = Math.Max(factor, minFactor);
         sigma = Math.Clamp(sigma, minSigma, maxSigma);
+        await FilterAndShow();
+    }
+
+    private async Task OnRadiusChange(ChangeEventArgs e)
+    {
+        radius = Convert.ToInt32(e.Value);
+        //factor = Math.Min(factor, maxFactor);
+        //factor = Math.Max(factor, minFactor);
+        radius = Math.Clamp(radius, minRadius, maxRadius);
         await FilterAndShow();
     }
 

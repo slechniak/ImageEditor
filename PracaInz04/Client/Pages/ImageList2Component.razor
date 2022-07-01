@@ -1,4 +1,5 @@
-﻿@page "/imagelist2"
+﻿@*@page "/imagelist2"*@
+@page "/gallery"
 
 @inject StateService SService
 @inject IndexedDbContext IndexedDbContext
@@ -39,9 +40,9 @@
                         </div>
                         <div class="card-footer">
 							<div class="d-flex justify-content-center">
-                                <button @onclick="() => uploadImageComponent.GoToEditor(imageInfo.Name, imageInfo.Id)" class="btn btn-primary flex-fill mx-1">Edit</button>
-                                <button @onclick="() => ModalShowDownloadComponent(imageInfo.Id)" class="btn btn-primary flex-fill mx-1">Download</button>
-                                <button class="btn btn-primary flex-fill mx-1">Delete</button>
+                                <button @onclick="() => uploadImageComponent.GoToEditor(imageInfo.Name, imageInfo.Id)" class="btn btn-dark flex-fill mx-1">Edit</button>
+                                <button @onclick="() => ModalShowDownloadComponent(imageInfo.Id)" class="btn btn-dark flex-fill mx-1">Download</button>
+                                <button @onclick="() => OnDelete(imageInfo.Id)" class="btn btn-dark flex-fill mx-1">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -89,6 +90,15 @@
     UploadImageComponent uploadImageComponent;
     [CascadingParameter] 
     public IModalService Modal { get; set; }
+
+    public async Task OnDelete(int id)
+    {
+        await IDbManager.DeleteImageFromIDb(id);
+        await LSManager.DeleteImageId();
+        await LSManager.DeleteImageName();
+        await LoadThumbnails();
+        StateHasChanged();
+    }
 
     private void ModalShowDownloadComponent(int imageId)
     {

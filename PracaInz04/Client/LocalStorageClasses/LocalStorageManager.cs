@@ -31,6 +31,11 @@ namespace PracaInz04.Client.LocalStorageClasses
             return await LStorage.GetItemAsync<string>(ImageNameKey);
         }
 
+        public async Task DeleteImageName()
+        {
+            await LStorage.RemoveItemAsync(ImageNameKey);
+        }
+
         public async Task SaveImageId(int imageId)
         {
             await LStorage.SetItemAsync(ImageIdKey, imageId);
@@ -39,6 +44,11 @@ namespace PracaInz04.Client.LocalStorageClasses
         public async Task<int?> GetImageId()
         {
             return await LStorage.GetItemAsync<int?>(ImageIdKey);
+        }
+
+        public async Task DeleteImageId()
+        {
+            await LStorage.RemoveItemAsync(ImageIdKey);
         }
 
         //counter

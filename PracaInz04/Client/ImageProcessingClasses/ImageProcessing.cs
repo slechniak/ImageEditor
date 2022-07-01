@@ -34,6 +34,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			Inferno,
 			Turbo,
 			Median,
+			Erosion,
+			Dilation,
+			Opacity,
 			Custom
 		}
 
@@ -242,6 +245,36 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
 				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
 				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
+		}
+
+		public SKBitmap FilterErode(SKBitmap bitmap, int radius)
+		{
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+				bitmap2 = bitmap;
+				SService.newBitmap = false;
+			}
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateErode(radius, radius));
+		}
+
+		public SKBitmap FilterDilate(SKBitmap bitmap, int radius)
+		{
+			if (SService.newBitmap)
+			{
+				//bitmap2 = FilterGrayscale(bitmap);
+				bitmap2 = bitmap;
+				SService.newBitmap = false;
+			}
+			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateDilate(radius, radius));
+		}
+
+		public SKBitmap FilterOpacity(SKBitmap bitmap, int level)
+		{
+			float[] result = OpacityMatrix(level);
+			ShowMatrix(result);
+			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
+				result));
 		}
 
 		public float[] GaussianKernel(int kernelSize)
@@ -652,11 +685,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			if (SService.newBitmap)
 			{
 				bitmap2 = FilterGrayscale(bitmap);
-				//pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
-				SKColor[] pixels = bitmap2.Pixels;
-                pixelsR = pixels.Select(x => x.Red).ToList();
-                pixelsG = pixels.Select(x => x.Green).ToList();
-                pixelsB = pixels.Select(x => x.Blue).ToList();
+				pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
+                //SKColor[] pixels = bitmap2.Pixels;
+                //pixelsR = pixels.Select(x => x.Red).ToList();
+                //pixelsG = pixels.Select(x => x.Green).ToList();
+                //pixelsB = pixels.Select(x => x.Blue).ToList();
 			}
 			byte[] table = ContrastTable1(factor, pixelValues);
             //byte[] table = ContrastTable2(factor, pixelValues);
@@ -1351,6 +1384,19 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				0, 0, 0, 0, level2,
 				0, 0, 0, 0, level2,
 				0, 0, 0, 0, 0
+			};
+			return AddArrays(offsetMatrix, IdentityMatrix());
+		}
+
+		public float[] OpacityMatrix(int level)
+		{
+			float level2 = (float)level / 255;
+			float[] offsetMatrix = new float[]
+			{
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, level2
 			};
 			return AddArrays(offsetMatrix, IdentityMatrix());
 		}
