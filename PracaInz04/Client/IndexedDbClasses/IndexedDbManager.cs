@@ -103,6 +103,7 @@ namespace PracaInz04.Client.IndexedDbClasses
             string CurrentDate = DateTime.Now.ToString();
             int maxKey = await IndexedDbContext.GetMaxKey<int, ImageOriginal2>();
             SKBitmap bitmap = SKBitmap.Decode(imageArray);
+            //Console.WriteLine(bitmap.ColorType);
             ImageOriginal2 imageOriginal2 = new ImageOriginal2()
             {
                 Id = maxKey + 1,

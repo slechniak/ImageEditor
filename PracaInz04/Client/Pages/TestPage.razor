@@ -47,29 +47,32 @@
 			@*<Tools2Component></Tools2Component>*@
             
             <p class="fs-6 fw-bold m-2">@ImageName</p>
-            <button class="btn btn-dark" @onclick="ReloadBitmap">Reload bitmap</button>
-            <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
-                    <button class="btn btn-dark" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
-                    <button class="btn btn-dark" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
-            </div>
             <div class="form-check m-2">
               <input class="form-check-input" type="checkbox" value="@showPixels" id="flexCheckChecked" checked
                     @onchange="OnChangeShowPixels">
               <label class="form-check-label" for="flexCheckChecked">Show pixels</label>
             </div>
-            <button class="btn btn-dark m-2 w-75" @onclick="ToggleCollapse">Toggle</button>
+            <button class="btn btn-dark m-2 w-50" @onclick="ReloadBitmap">Reload bitmap</button>
+            @*<button class="btn btn-dark m-2 w-75" @onclick="ToggleCollapse">Toggle</button>*@
             @if(!collapse)
             {
                 <button class="btn btn-dark m-2 w-50" @onclick="ResetPanOffset">Center image</button>
                 <button class="btn btn-dark m-2 w-50" @onclick="ResetScale">Reset scale</button>
-                <button class="btn btn-dark m-2 w-50" @onclick="CropImage">Crop image</button>
+                <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
+                    <button class="btn btn-dark border-end" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
+                    <button class="btn btn-dark border-start" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
+                </div>
                 @*<button class="btn btn-dark m-2 w-50" @onclick="RotateImage">Rotate image</button>*@
                 <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
-                    <button class="btn btn-dark" @onclick="() => RotateImage(-1)">Rotate -90</button>
-                    <button class="btn btn-dark" @onclick="() => RotateImage(1)">Rotate 90</button>
+                    <button class="btn btn-dark border-end" @onclick="() => RotateImage(-1)">Rotate -90</button>
+                    <button class="btn btn-dark border-start" @onclick="() => RotateImage(1)">Rotate 90</button>
                 </div>
                 <button class="btn btn-dark m-2 w-50" @onclick="() => FlipImage(true)">Flip horizontally</button>
                 <button class="btn btn-dark m-2 w-50" @onclick="() => FlipImage(false)">Flip vertically</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowDownloadComponent">Download</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
+                <button class="btn btn-dark m-2 w-50" @onclick="CropImage">Crop image</button>
                 @*<button class="btn btn-dark m-2 w-50" @onclick="() => TiltImage(5)">Tilt image</button>*@
             
                 @*<label for="customRange1" class="form-label">Tilt angle</label>
@@ -78,30 +81,36 @@
                     min="0" max="90"
                     type="range" class="form-range" id="customRange1">
                 <p>@tiltAngle</p>*@
-
-                <label for="customRange1" class="form-label pt-2 px-2">Tilt image</label>
-                <input 
-                    value="@tiltAngle" @oninput="OnTiltAngleChange"
-                    min="@minAngle" max="@maxAngle"
-                    type="range" class="form-range m-2 w-75" id="customRange1">
-                <input 
-                    value="@tiltAngle" @onchange="OnTiltAngleChange"
-                    type="number" class="form-control m-2 w-25" id="formControlInput1">
-                <button class="btn btn-dark m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
-
-                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowDownloadComponent">Download</button>
-                <button class="btn btn-dark m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
+                <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
+                    <label for="customRange1" class="fs-6 fw-bold m-2">Tilt image</label>
+                    <input 
+                        value="@tiltAngle" @oninput="OnTiltAngleChange"
+                        min="@minAngle" max="@maxAngle"
+                        type="range" class="form-range m-2 w-75" id="customRange1">
+                    <input 
+                        value="@tiltAngle" @onchange="OnTiltAngleChange"
+                        type="number" class="form-control m-2 w-25" id="formControlInput1">
+                    <button class="btn btn-dark m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
+				</div>
                 @*<button class="btn btn-dark m-2 w-50" @onclick="@(() => Progress(SaveImage, message: "Saving..."))">Save image</button>*@
-                <button class="btn btn-dark m-2 w-50" @onclick="@(() => SService.Progress(Modal, SaveImage, message: "Saving..."))">Save image</button>
                 @*<button class="btn btn-dark m-2 w-50" @onclick="OpenCVSharpAction">OpenCVSharp</button>*@
                 @*<button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(3)">Medianx3</button>
                 <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(5)">Medianx5</button>
                 <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(7)">Medianx7</button>*@
                 @*<button class="btn btn-dark m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
             }
-            <Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
+            <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
+                <Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
+            </div>
+            <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
+                <HistogramComponent></HistogramComponent>
+            </div>
+            <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
+                <ColorSliderComponent AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>
+            </div>
+            @*<Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
             <HistogramComponent></HistogramComponent>
-            <ColorSliderComponent AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>
+            <ColorSliderComponent AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>*@
         </div>
 	</div>
 </div>

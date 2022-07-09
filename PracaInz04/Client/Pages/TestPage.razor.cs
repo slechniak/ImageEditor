@@ -960,6 +960,7 @@ namespace PracaInz04.Client.Pages
                 {
                     //AddBitmap(SKBitmap.Decode(imageOriginal2.Array));
                     sKBitmap = SKBitmap.Decode(imageOriginal2.Array);
+                    Console.WriteLine(sKBitmap.ColorType);
                     SService.originalBitmap = sKBitmap;
                     AddBitmap(sKBitmap);
                     //testSrc2 = await ImageProc.GetImageURL(imageData.ImageArray);
@@ -1010,9 +1011,24 @@ namespace PracaInz04.Client.Pages
         }
 
         ///////////////////////////////////////////////////////////////////////////
-        
+
         // other methods
+
         private void PanBitmapRect()
+        {
+            float panX = panRect.Right - panRect.Left;
+            float panY = panRect.Bottom - panRect.Top;
+            panOffset.X += panX;
+            panOffset.Y += panY;
+
+            panRect.Left = panRect.Right;
+            panRect.Top = panRect.Bottom;
+
+            bitmapRect.Offset(panOffset.X, panOffset.Y);
+        }
+
+        //og - worked
+        private void PanBitmapRect1()
         {
             float panX = panRect.Right - panRect.Left;
             float panY = panRect.Bottom - panRect.Top;
@@ -1021,11 +1037,13 @@ namespace PracaInz04.Client.Pages
 
             panRect.Left = panRect.Right;
             panRect.Top = panRect.Bottom;
-
-            bitmapRect.Left += panOffset.X * scrollScale;
-            bitmapRect.Top += panOffset.Y * scrollScale;
-            bitmapRect.Right += panOffset.X * scrollScale;
-            bitmapRect.Bottom += panOffset.Y * scrollScale;
+            
+            bitmapRect.Offset(panOffset.X * scrollScale, panOffset.Y * scrollScale);
+            //og - worked
+            //bitmapRect.Left += panOffset.X * scrollScale;
+            //bitmapRect.Top += panOffset.Y * scrollScale;
+            //bitmapRect.Right += panOffset.X * scrollScale;
+            //bitmapRect.Bottom += panOffset.Y * scrollScale;
         }
 
         private void TiltUnselected(SKPath unselected)
