@@ -823,6 +823,21 @@ namespace PracaInz04.Client.Pages
             skiaView.Invalidate();
         }
 
+        //public void Sample()
+        //{
+        //    SKBitmap bitmap;
+        //    SKRect bitmapRect, selectRect;
+        //    float ratio = bitmap.Width / bitmapRect.Width;
+        //    SKMatrix result = SKMatrix.CreateIdentity();
+        //    SKMatrix.PreConcat(ref result, SKMatrix.CreateScale(ratio, ratio));
+        //    SKMatrix.PreConcat(ref result, SKMatrix.CreateTranslation(-bitmapRect.Left, -bitmapRect.Top));
+        //    SKRect sourceRect = result.MapRect(selectRect);
+        //    SKRect destRect = new SKRect(0, 0, sourceRect.Width, sourceRect.Height);
+        //    SKBitmap croppedBitmap = new SKBitmap((int)sourceRect.Width, (int)sourceRect.Height);
+        //    SKCanvas canvas = new SKCanvas(croppedBitmap);
+        //    canvas.DrawBitmap(bitmap, sourceRect, destRect);
+        //}
+
         //// original
         //public void FilterImage1(ImageProcessing.FilterType filterType)
         //{

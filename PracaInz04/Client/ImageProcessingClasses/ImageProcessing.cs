@@ -558,6 +558,26 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return kernel;
 		}
 
+		//public void Sample()
+  //      {
+		//	byte[] tableR = new byte[256];
+		//	byte[] tableG = new byte[256];
+		//	byte[] tableB = new byte[256];
+		//	byte[] tableA = new byte[256];
+		//	byte R, G, B, A, R2, G2, B2, A2;
+
+		//	R2 = tableR[R];
+		//	G2 = tableG[G];
+		//	B2 = tableB[B];
+		//	A2 = tableA[A];
+
+		//	byte[] tableR = new byte[256];
+		//	byte[] tableG = new byte[256];
+		//	byte[] tableB = new byte[256];
+
+		//	SKColorFilter colorFilter2 = SKColorFilter.CreateTable(null, tableR, tableG, tableB);
+		//}
+
 		public SKBitmap FilterBinary(SKBitmap bitmap, int treshold)
 		{
 			byte[] table = BinaryTable(treshold);
@@ -643,7 +663,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			{
 				oldL = pixelsL[i];
 				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
-				newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + offset;
+				//og
+				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + offset;
+				newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + newMin;
 				newL = Math.Clamp(newL, 0f, 100f);
 				pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
                 //pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
@@ -1388,6 +1410,33 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return AddArrays(offsetMatrix, IdentityMatrix());
 		}
 
+		//public void Sample()
+  //      {
+		//	float value;
+		//	var opacity = new float[]{
+		//		0, 0, 0, 0, 0,
+		//		0, 0, 0, 0, 0,
+		//		0, 0, 0, 0, 0,
+		//		0, 0, 0, 0, value};
+		//	float shiftRed, shiftGreen, shiftBlue;
+		//	var colorSlider = new float[]{
+		//		0, 0, 0, 0, shiftRed,
+		//		0, 0, 0, 0, shiftGreen,
+		//		0, 0, 0, 0, shiftBlue,
+		//		0, 0, 0, 0, 0};
+		//	var grayscale = new float[]{
+		//		0.21f, 0.72f, 0.07f, 0, 0,
+		//		0.21f, 0.72f, 0.07f, 0, 0,
+		//		0.21f, 0.72f, 0.07f, 0, 0,
+		//		0,     0,     0,     1, 0};
+		//	float value;
+		//	var grayscale = new float[]{
+		//		0, 0, 0, 0, value,
+		//		0, 0, 0, 0, value,
+		//		0, 0, 0, 0, value,
+		//		0, 0, 0, 0, 0};
+		//}
+
 		public float[] OpacityMatrix(int level)
 		{
 			float level2 = (float)level / 255;
@@ -1454,6 +1503,22 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
+		//public void Sample()
+  //      {
+		//	float oldMin, oldMax;
+		//	float newMin = oldMin - factor;
+		//	float newMax = oldMax + factor;
+		//	float newRange = newMax - newMin;
+		//	byte[] table = new byte[256];
+		//	for (int i = 0; i < table.Length; i++){
+		//		table[i] = (byte)i;
+		//	}
+		//	for (int i = (int)oldMin; i <= oldMax; i++){
+		//		double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
+		//		table[i] = (byte)Math.Clamp(newValue, 0, 255);
+		//	}
+		//}
+
 		// casts to (oldmin-f ; oldmax+f)
 		public byte[] ContrastTable1(int factor, IEnumerable<byte> pixels)
 		{
@@ -1473,9 +1538,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxValue;
 			float newMin = minValue - factor;
 			float newMax = maxValue + factor;
-			// dla ujemnych wartosci factor
-			newMin = Math.Min(newMin, newMax);
-			newMax = Math.Max(newMax, newMin);
+            // dla ujemnych wartosci factor
+   //         Console.WriteLine($"{newMin}, {newMax} ->");
+			//newMin = Math.Min(newMin, newMax);
+			//newMax = Math.Max(newMax, newMin);
+			//Console.WriteLine($"-> {newMin}, {newMax}.");
 			float newRange = newMax - newMin;
 
 			for (int i = (int)oldMin; i <= oldMax; i++)

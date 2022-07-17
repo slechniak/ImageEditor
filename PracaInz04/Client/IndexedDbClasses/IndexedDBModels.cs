@@ -101,8 +101,9 @@ namespace PracaInz04.Client.IndexedDbClasses
             //indexedDbDatabaseModel.AddStore<ImageDto>();
             //indexedDbDatabaseModel.AddStore<ImageInfo>();
 
-            indexedDbDatabaseModel.AddStore<ImageResized>();
-            indexedDbDatabaseModel.AddStore<ImageData>();
+            // og
+            //indexedDbDatabaseModel.AddStore<ImageResized>();
+            //indexedDbDatabaseModel.AddStore<ImageData>();
 
             indexedDbDatabaseModel.AddStore<ImageResized2>();
             indexedDbDatabaseModel.AddStore<ImageOriginal2>();
