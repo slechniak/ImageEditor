@@ -84,17 +84,12 @@
 
     private void HandleInput(ChangeEventArgs e, bool isWidth)
     {
-        //SizeChanged(Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0), null);
-        //SizeChanged(null, Convert.ToInt32((string)e.Value != string.Empty ? e.Value : 0));
         if (e.Value != null)
         {
             string str = (string)e.Value;
             int number;
             if (!Int32.TryParse(str, out number))
             {
-                //number = 0;
-                //size.Width = null;
-                //size.Height = null;
                 size.Width = 0;
                 size.Height = 0;
             }
@@ -114,17 +109,13 @@
                     else
                         size.Height = number;
                 }
-                //size.Times = (float)Math.Round((float)size.Width / OriginalWidth, 2);
             }
         }
     }
 
     private void SizeChanged(int? width, int? height)
     {
-        //SKImageInfo info = ImgProc.GetResizedImageInfo(SService.bitmap, width, height);
         SKImageInfo info = ImgProc.GetResizedImageInfo(bitmap, width, height);
-        //size.Width = info.Width == 0 ? null : info.Width;
-        //size.Height = info.Height == 0 ? null : info.Height;
         size.Width = info.Width;
         size.Height = info.Height;
         size.Times = (float)Math.Round((float)info.Width / OriginalWidth, 2);
@@ -136,14 +127,9 @@
         if (size.Width > 0 && size.Height > 0)
         {
             Console.WriteLine("resize");
-            //SService.bitmap = ImgProc.ResizeSKBitmap(SService.bitmap, size.Width, size.Height);
             SKBitmap resizedBitmap = ImgProc.ResizeSKBitmap(bitmap, size.Width, size.Height);
-            //ModalInstance.CloseAsync();
-            //ModalInstance.CloseAsync(ModalResult.Ok<SKBitmap>(SService.bitmap));
             ModalInstance.CloseAsync(ModalResult.Ok<SKBitmap>(resizedBitmap));
 
-            //await ModalInstance.CancelAsync();
-            //ModalInstance.CloseAsync(ModalResult.Ok(true));
         }
     }
 

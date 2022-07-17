@@ -5,13 +5,10 @@
 <p class="fs-6 fw-bold m-2">Filters</p>
 <div class="input-group m-2 w-75">
     <span class="input-group-text bg-dark text-light border-0">Filter:</span>
-    @*<select @bind="filterType" class="form-select">*@
     <select @onchange="OnFilterChosen" class="form-select bg-dark text-light border-0 border-start">
-        @*<option value="null" disabled selected>Choose filter</option>*@
         <option value="" selected>None</option>
         @foreach(var fType in filterTypeList)
         {
-            @*<option value=@fType>@((FilterType)fType == FilterType.EqualizeHistogram ? "Equalize histogram" : fType)</option>*@
             <option value=@fType>
                 @switch((FilterType)fType)
                 {
@@ -95,18 +92,9 @@
         value="@kernelSize" @oninput="OnKernelSizeChange"
         min="@minKernel" max="@maxKernel" step="2"
         type="range" class="form-range m-2 w-75" id="customRange5">
-    @*<input 
-        value="@kernelSize" @onchange="OnKernelSizeChange" step="2"
-        type="number" class="form-control m-2 w-25" id="formControlInput5">*@
+    
 }
-@*@if(filterType == FilterType.Gaussian)
-{
-    <label for="customRange6" class="form-label pt-2 px-2">Kernel size: @gaussSize</label>
-    <input 
-        value="@gaussSize" @oninput="OnKernelGaussChange"
-        min="@minKernelGauss" max="@maxKernelGauss" step="2"
-        type="range" class="form-range m-2 w-75" id="customRange6">
-}*@
+
 @if(filterType == FilterType.Gaussian)
 {
     <label for="customRange7" class="form-label pt-2 px-2">Kernel size: @gaussSize2</label>
@@ -136,7 +124,6 @@
         min="@minRadius" max="@maxRadius" step="1"
         type="range" class="form-range m-2 w-75" id="customRange10">
 }
-@*@if(filterType == FilterType.Custom)*@
 @if(new List<FilterType?>{ FilterType.Sharpen, FilterType.EdgeDetect,FilterType.Emboss, FilterType.SobelVertical,
     FilterType.SobelHorizontal, FilterType.Custom}.Contains(filterType))
 {
@@ -179,10 +166,6 @@
     public int maxLevel = 255;
 
     public int factor = 0;
-    //public int minFactor = 0;
-    //public int minFactor = -100;
-    //public int maxFactor = 100;
-    //public bool inColor = true;
     public int minFactor = -255;
     public int maxFactor = 255;
     public bool inColor = false;
@@ -200,7 +183,6 @@
     public int maxKernelGauss = 5;
 
     public int gaussSize2 = 3;
-    //public int minKernelGauss2 = 3;
     public int minKernelGauss2 = 1;
     public int maxKernelGauss2 = 11;
 
@@ -220,14 +202,9 @@
 
     SKBitmap result;
 
-    // <text>Equalize histogram</text> == @:Equalize histogram
 
     public async Task ApplyFilter()
     {
-        //og, worked
-        //await FilterAndShow();
-        //await AddBitmap.InvokeAsync(result);
-
         await ShowBitmap.InvokeAsync(result);
         await AddBitmap.InvokeAsync(result);
     }
@@ -255,117 +232,85 @@
 
     public async Task FilterAndShow()
     {
-        //result = SService.bitmap;
         result = SService.bitmap.Copy();
-        //SKColor color = result.GetPixel(0, 0);
-        //Console.WriteLine($"before RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
         switch (filterType)
         {
             case ImageProcessing.FilterType.Grayscale:
-                //result = ImageProc.FilterGrayscale(SService.bitmap);
                 result = ImageProc.FilterGrayscale(result);
                 break;
             case ImageProcessing.FilterType.Binary:
-                //result = ImageProc.FilterBinary(SService.bitmap, treshold);
                 result = ImageProc.FilterBinary(result, treshold);
                 break;
             case ImageProcessing.FilterType.Brightness:
-                //result = ImageProc.FilterBrightness(SService.bitmap, level);
                 result = ImageProc.FilterBrightness(result, level);
                 break;
             case ImageProcessing.FilterType.Contrast:
-                //result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
                 result = ImageProc.FilterContrast(result, factor, inColor);
                 break;
             case ImageProcessing.FilterType.Negative:
-                //result = ImageProc.FilterContrast(SService.bitmap, factor, inColor);
                 result = ImageProc.FilterNegative(result);
                 break;
             case ImageProcessing.FilterType.EqualizeHistogram:
-                //result = ImageProc.EqualizeHistogram(SService.bitmap);
                 result = ImageProc.EqualizeHistogram(result);
                 break;
             case ImageProcessing.FilterType.StretchHistogram:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.StretchHistogram(result, cutoff);
                 break;
             case ImageProcessing.FilterType.Average:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
-                //await ShowPixels(result, "before: ");
                 result = ImageProc.FilterAverage(result, kernelSize);
-                //await ShowPixels(result, "after: ");
                 break;
             case ImageProcessing.FilterType.Sharpen:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterSharpen(result);
                 customKernel = ImageProc.SharpenKernel();
                 break;
-            //case ImageProcessing.FilterType.Gaussian:
-            //    //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
-            //    result = ImageProc.FilterGaussian(result, gaussSize);
-            //    break;
             case ImageProcessing.FilterType.Gaussian:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 Console.WriteLine($"gausSize2: {gaussSize2}, sigma: {sigma}");
                 result = ImageProc.FilterGaussian2(result, gaussSize2, sigma);
                 break;
             case ImageProcessing.FilterType.EdgeDetect:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterEdgeDetect(result);
                 customKernel = ImageProc.EdgeDetectKernel();
                 break;
             case ImageProcessing.FilterType.Emboss:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterEmboss(result);
                 customKernel = ImageProc.EmbossKernel();
                 break;
             case ImageProcessing.FilterType.SobelVertical:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterSobelVertical(result);
                 customKernel = ImageProc.SobelVerticalKernel();
                 break;
             case ImageProcessing.FilterType.SobelHorizontal:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterSobelHorizontal(result);
                 customKernel = ImageProc.SobelHorizontalKernel();
                 break;
             case ImageProcessing.FilterType.Inferno:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterInferno(result);
                 break;
             case ImageProcessing.FilterType.Turbo:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterTurbo(result);
                 break;
             case ImageProcessing.FilterType.Median:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterMedian(result, medianKernel);
                 break;
             case ImageProcessing.FilterType.Erosion:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterErode(result, radius);
                 break;
             case ImageProcessing.FilterType.Dilation:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterDilate(result, radius);
                 break;
             case ImageProcessing.FilterType.Opacity:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterOpacity(result, level);
                 break;
             case ImageProcessing.FilterType.Custom:
-                //result = ImageProc.StretchHistogram(SService.bitmap, cutoff);
                 result = ImageProc.FilterCustom(result, customKernel);
                 break;
         }
-        //color = result.GetPixel(0, 0);
-        //Console.WriteLine($"after RGBA: ({color.Red}, {color.Green}, {color.Blue}, {color.Alpha})");
+        
         await ShowBitmap.InvokeAsync(result);
     }
 
     protected override void OnInitialized()
     {
-        //result = SService.bitmap;
         result = SService.bitmap?.Copy();
         filterTypeList = Enum.GetValues(typeof(FilterType));
         customKernel = ImageProc.IdentityKernel();
@@ -384,7 +329,6 @@
             else
             {
                 filterType = null;
-                //await ShowBitmap.InvokeAsync(SService.bitmap);
                 await ShowBitmap.InvokeAsync(SService.bitmap.Copy());
             }
         }
@@ -393,8 +337,6 @@
     private async Task OnTresholdChange(ChangeEventArgs e)
     {
         treshold = Convert.ToInt32(e.Value);
-        //treshold = Math.Min(treshold, maxTreshold);
-        //treshold = Math.Max(treshold, minTreshold);
         treshold = Math.Clamp(treshold, minTreshold, maxTreshold);
         await FilterAndShow();
     }
@@ -402,8 +344,6 @@
     private async Task OnLevelChange(ChangeEventArgs e)
     {
         level = Convert.ToInt32(e.Value);
-        //level = Math.Min(level, maxLevel);
-        //level = Math.Max(level, minLevel);
         level = Math.Clamp(level, minLevel, maxLevel);
         await FilterAndShow();
     }
@@ -411,8 +351,6 @@
     private async Task OnFactorChange(ChangeEventArgs e)
     {
         factor = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         factor = Math.Clamp(factor, minFactor, maxFactor);
         await FilterAndShow();
     }
@@ -420,8 +358,6 @@
     private async Task OnCutoffChange(ChangeEventArgs e)
     {
         cutoff = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         cutoff = Math.Clamp(cutoff, minCutoff, maxCutoff);
         await FilterAndShow();
     }
@@ -429,8 +365,6 @@
     private async Task OnKernelSizeChange(ChangeEventArgs e)
     {
         kernelSize = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         kernelSize = Math.Clamp(kernelSize, minKernel, maxKernel);
         if (kernelSize % 2 != 0)
             await FilterAndShow();
@@ -441,8 +375,6 @@
     private async Task OnKernelGaussChange(ChangeEventArgs e)
     {
         gaussSize = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         gaussSize = Math.Clamp(gaussSize, minKernelGauss, maxKernelGauss);
         if (gaussSize % 2 != 0)
             await FilterAndShow();
@@ -453,8 +385,6 @@
     private async Task OnKernelGauss2Change(ChangeEventArgs e)
     {
         gaussSize2 = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         gaussSize2 = Math.Clamp(gaussSize2, minKernelGauss2, maxKernelGauss2);
         if (gaussSize2 % 2 != 0)
             await FilterAndShow();
@@ -465,8 +395,6 @@
     private async Task OnMedianKernelChange(ChangeEventArgs e)
     {
         medianKernel = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         medianKernel = Math.Clamp(medianKernel, minMedianKernel, maxMedianKernel);
         if (medianKernel % 2 != 0)
             await FilterAndShow();
@@ -477,8 +405,6 @@
     private async Task OnSigmaChange(ChangeEventArgs e)
     {
         sigma = (float)Convert.ToDouble(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         sigma = Math.Clamp(sigma, minSigma, maxSigma);
         await FilterAndShow();
     }
@@ -486,8 +412,6 @@
     private async Task OnRadiusChange(ChangeEventArgs e)
     {
         radius = Convert.ToInt32(e.Value);
-        //factor = Math.Min(factor, maxFactor);
-        //factor = Math.Max(factor, minFactor);
         radius = Math.Clamp(radius, minRadius, maxRadius);
         await FilterAndShow();
     }
@@ -519,7 +443,6 @@
         }
         SService.newBitmap = true;
         factor = 0;
-        //StateHasChanged();
         await FilterAndShow();
     }
 }

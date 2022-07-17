@@ -10,11 +10,7 @@ namespace PracaInz04.Client.LocalStorageClasses
         public string CountKey { get; set; } = "count";
         public string ImageNameKey { get; set; } = "imageName";
         public string ImageIdKey { get; set; } = "imageId";
-        //public Dictionary<string, string> keys = new(){
-        //{"count", "count"},
-        //{"imageName", "imageName"}
-        //};
-
+        
         public LocalStorageManager(ILocalStorageService ls, StateService sservice)
         {
             LStorage = ls;
@@ -51,7 +47,6 @@ namespace PracaInz04.Client.LocalStorageClasses
             await LStorage.RemoveItemAsync(ImageIdKey);
         }
 
-        //counter
         public async Task GetFromLocalStorage()
         {
             int? countValue;
@@ -60,7 +55,6 @@ namespace PracaInz04.Client.LocalStorageClasses
             {
                 SService.Count = (int)countValue;
             }
-            //Console.WriteLine($"GetFromLocalStorage, Count = {Count}");
         }
 
         public async Task SaveToLocalStorage()

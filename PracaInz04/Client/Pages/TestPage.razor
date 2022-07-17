@@ -1,24 +1,11 @@
-﻿@*@page "/testpage"*@
-@page "/"
+﻿@page "/"
 @page "/editor"
 
 <div class="container-fluid bg-primary h-100">
-    @*<div hidden @onkeypress="OnKeyPressed"></div>*@
-    @*<input type="text" @onkeydown="OnKeyPressed"/>*@
 	<div class="row bg-success h-100">
-        @*had h-100*@
-		@*<div class="col-md-9 bg-warning d-flex align-items-center justify-content-center mh-100">*@
 		<div class="col-md-9 bg-black d-flex align-items-center justify-content-center p-0 mh-100">
             @if(ImageName!=null && ImageName!="")
             {
-                @*<img class="mw-100 mh-100" src="images/placeholder.svg" alt="Card image cap">*@
-                @*<img class="mw-100 mh-100" width="750" src="images/cat01_500.jpg" alt="Card image cap"> *@
-                @*<img class="mw-100 mh-100" width="750" src="@testSrc2" alt="Card image cap"> *@
-                
-                @*<img @ref="imgReference" hidden src="images/cat01_500.jpg"> *@
-                @*<img @ref="imgReference" hidden src="@testSrc"> *@
-                @*<BECanvas Width="500" Height="500" @ref="_canvasReference" ></BECanvas>*@
-
                 <SKCanvasView 
                     @ref="skiaView" 
                     @onmousewheel="OnMouseWheel"
@@ -38,15 +25,11 @@
             {   
                 <div class="text-center">
                     <UploadImageComponent ParentMethod="LoadImageToEdit"></UploadImageComponent>
-                    @*<div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("imagelist2")'>Choose image from Image List</div>*@
                     <div class="btn btn-light my-2" @onclick='()=>NavigationManager.NavigateTo("gallery")'>Choose image from Image List</div>
                 </div>
             }
 		</div>
-		@*<div class="col-md-3 bg-info d-flex flex-column overflow-auto mh-100 align-items-center">*@
 		<div class="col-md-3 d-flex flex-column overflow-auto mh-100 align-items-center" style="background-color: indigo; color: #d7d7d7">
-			@*<Tools2Component></Tools2Component>*@
-            
             <p class="fs-6 fw-bold m-2">@ImageName</p>
             @if(!collapse)
             {
@@ -57,7 +40,6 @@
                             @onchange="OnChangeShowPixels">
                       <label class="form-check-label" for="flexCheckChecked">Show pixels</label>
                     </div>
-                    @*<button class="btn btn-dark m-2 w-75" @onclick="ToggleCollapse">Toggle</button>*@
                     <button class="btn btn-dark m-2 w-50" @onclick="ResetPanOffset">Center image</button>
                     <button class="btn btn-dark m-2 w-50" @onclick="ResetScale">Reset scale</button>
                 </div>
@@ -73,7 +55,6 @@
                         <button class="btn btn-dark border-end" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: false, eCode: "KeyZ"))">Undo</button>
                         <button class="btn btn-dark border-start" @onclick="@(() => OnKeyPressedJS(eCtrlKey: true, eShiftKey: true, eCode: "KeyZ"))">Redo</button>
                     </div>
-                    @*<button class="btn btn-dark m-2 w-50" @onclick="RotateImage">Rotate image</button>*@
                     <div class="btn-group m-2 w-75" role="group" aria-label="Basic example">
                         <button class="btn btn-dark border-end" @onclick="() => RotateImage(-1)">Rotate -90</button>
                         <button class="btn btn-dark border-start" @onclick="() => RotateImage(1)">Rotate 90</button>
@@ -83,14 +64,6 @@
                     <button class="btn btn-dark m-2 w-50" @onclick="ModalShowResizeComponent">Resize</button>
                     <button class="btn btn-dark m-2 w-50" @onclick="CropImage">Crop image</button>
                 </div>
-                    @*<button class="btn btn-dark m-2 w-50" @onclick="() => TiltImage(5)">Tilt image</button>*@
-            
-                    @*<label for="customRange1" class="form-label">Tilt angle</label>
-                    <input 
-                        @bind="tiltAngle" @bind:event="oninput" @on="() => Console.WriteLine(msg)"
-                        min="0" max="90"
-                        type="range" class="form-range" id="customRange1">
-                    <p>@tiltAngle</p>*@
                 <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
                     <label for="customRange1" class="fs-6 fw-bold m-2">Tilt image</label>
                     <input 
@@ -102,12 +75,6 @@
                         type="number" class="form-control m-2 w-25" id="formControlInput1">
                     <button class="btn btn-dark m-2 w-50" @onclick="ResetTilt">Reset tilt</button>
 				</div>
-                @*<button class="btn btn-dark m-2 w-50" @onclick="@(() => Progress(SaveImage, message: "Saving..."))">Save image</button>*@
-                @*<button class="btn btn-dark m-2 w-50" @onclick="OpenCVSharpAction">OpenCVSharp</button>*@
-                @*<button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(3)">Medianx3</button>
-                <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(5)">Medianx5</button>
-                <button class="btn btn-dark m-2 w-50" @onclick="() => MedianJS(7)">Medianx7</button>*@
-                @*<button class="btn btn-dark m-2 w-50" @onclick="ModalShowFilterComponent">Filter image</button>*@
             }
             <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
                 <Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
@@ -118,9 +85,6 @@
             <div class="border border-1 border-white w-100 p-1 my-2 d-flex flex-column align-items-center rounded-1">
                 <HistogramComponent></HistogramComponent>
             </div>
-            @*<Filter2Component AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></Filter2Component>
-            <HistogramComponent></HistogramComponent>
-            <ColorSliderComponent AddBitmap="AddBitmap" ShowBitmap="ShowBitmap"></ColorSliderComponent>*@
         </div>
 	</div>
 </div>

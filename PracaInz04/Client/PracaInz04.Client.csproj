@@ -10,15 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="BaseComponents\**" />
     <Compile Remove="DnetIndexedDb\bin\**" />
     <Compile Remove="DnetIndexedDb\obj\**" />
     <Compile Remove="DnetIndexedDb\Properties\**" />
+    <Content Remove="BaseComponents\**" />
     <Content Remove="DnetIndexedDb\bin\**" />
     <Content Remove="DnetIndexedDb\obj\**" />
     <Content Remove="DnetIndexedDb\Properties\**" />
+    <EmbeddedResource Remove="BaseComponents\**" />
     <EmbeddedResource Remove="DnetIndexedDb\bin\**" />
     <EmbeddedResource Remove="DnetIndexedDb\obj\**" />
     <EmbeddedResource Remove="DnetIndexedDb\Properties\**" />
+    <None Remove="BaseComponents\**" />
     <None Remove="DnetIndexedDb\bin\**" />
     <None Remove="DnetIndexedDb\obj\**" />
     <None Remove="DnetIndexedDb\Properties\**" />
@@ -44,7 +48,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="BaseComponents\" />
     <Folder Include="DnetIndexedDb\wwwroot\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>

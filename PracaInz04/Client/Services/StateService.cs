@@ -12,9 +12,6 @@ namespace PracaInz04.Client.Services
 {
     public class StateService
     {
-        public byte[] ImageArray { get; set; }
-        public string ImageName { get; set; }
-
         private SKBitmap _bitmap;
         public SKBitmap bitmap 
         {
@@ -32,15 +29,10 @@ namespace PracaInz04.Client.Services
 
         public SKBitmap originalBitmap { get; set; }
 
-        // old
         public int Count { get; set; }
         public string countKey = "count";
 
-        public IBrowserFile imageFile { get; set; }
-        public Stream imageStream { get; set; }
-        public byte[] imageArray { get; set; }
-        public string imgUrl { get; set; } = string.Empty;
-        //public Image imageResult { get; set; }
+        
         public bool newBitmap = false;
 
         public ILocalStorageService localStorage;
@@ -48,9 +40,7 @@ namespace PracaInz04.Client.Services
         public event Action OnChange;
 
         public event Func<Task> RedrawHistogram;
-        //public event Action RedrawHistogram;
 
-        // histogram
         public bool isRed = false;
         public bool isGreen = false;
         public bool isBlue = false;
@@ -84,25 +74,5 @@ namespace PracaInz04.Client.Services
             await Task.Delay(1);
         }
 
-        //public async Task GetFromLocalStorage()
-        //{
-        //    int? countValue;
-        //    countValue = await localStorage.GetItemAsync<int>(countKey);
-        //    if (countValue is not null)
-        //    {
-        //        Count = (int)countValue;
-        //    }
-        //    //Console.WriteLine($"GetFromLocalStorage, Count = {Count}");
-        //}
-
-        //public async Task SaveToLocalStorage()
-        //{
-        //    await localStorage.SetItemAsync(countKey, Count);
-        //}
-
-        //public async Task LoadImage()
-        //{
-        //    imageResult = Image.Load(imageArray);
-        //}
     }
 }

@@ -45,19 +45,12 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public int LongerResized { get; set; } = 1000;
 
 		byte minValue, maxValue;
-		//byte[] histogram;
-		//int[] histogram;
 		SKBitmap bitmap2;
-		//byte[] pixelValues;
 		IEnumerable<byte> pixelValues;
 		int[] histogramArray;
 
 		float[] pixelsH, pixelsS, pixelsL;
 		float minL, maxL;
-
-		List<byte> pixelsR;
-		List<byte> pixelsG;
-		List<byte> pixelsB;
 
 		int[,] indexTable;
 		SKColor[] pixelTable;
@@ -70,25 +63,10 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public byte[] ResizeImageSharp(byte[] imageArray, int width = 500)
 		{
-			// rotate on upload - comment was in ResizeSkia byte[]
-			//using(Image image = Image.Load(imageArray, out var imageFormat))
-			//{
-			//	image.Mutate(x => x.AutoOrient());
-			//	using (var ms = new MemoryStream())
-			//	{
-			//		image.Save(ms, imageFormat);
-			//		imageArray = ms.ToArray();
-			//	}
-			//}
-			//
-
 			byte[] imageResult = new byte[] { };
 			using (Image image = Image.Load(imageArray, out var imageFormat))
 			{
 				image.Mutate(x => x.AutoOrient());
-				//int height = (image.Height * width) / image.Width;
-				//image.Mutate(x => x.Resize(width, height).AutoOrient());
-				//Console.WriteLine($"{image.Width} -> {width}");
 				image.Mutate(x => x.Resize(width, 0));
 				using (var ms = new MemoryStream())
 				{
@@ -112,7 +90,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public byte[] ResizeSkiaCommon(SKBitmap sourceBitmap)
 		{
-			//int height = (sourceBitmap.Height * width) / sourceBitmap.Width;
 			int longer = Math.Max(sourceBitmap.Width, sourceBitmap.Height);
 			int shorter = Math.Min(sourceBitmap.Width, sourceBitmap.Height);
 
@@ -134,12 +111,10 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				}
 				var resultInfo = new SKImageInfo(resizedWidth, resizedHeight);
 				SKBitmap resultBitmap = sourceBitmap.Resize(resultInfo, SKFilterQuality.High);
-				//Console.WriteLine($"ResizeSkiaCommon resized w, h: {resultBitmap.Width}, {resultBitmap.Height}");
 				return SKBitmapToArray(resultBitmap);
 			}
 			else
 			{
-				//Console.WriteLine($"ResizeSkiaCommon NOT resized w, h: {sourceBitmap.Width}, {sourceBitmap.Height}");
 				return SKBitmapToArray(sourceBitmap); 
 			}
 		}
@@ -147,7 +122,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public SKBitmap ResizeSKBitmap(SKBitmap bitmap, int? width = null, int? height = null)
 		{
 			var resultInfo = GetResizedImageInfo(bitmap, width, height);
-			//Console.WriteLine($"resultInfo: w: {resultInfo.Width}, h: {resultInfo.Height}");
 			SKBitmap resultBitmap = bitmap.Resize(resultInfo, SKFilterQuality.High);
 			return resultBitmap;
 		}
@@ -195,7 +169,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		public async Task<string> GetImageURL(byte[] imageArray)
 		{
 			string imgSrc = string.Empty;
-			//imgSrc = await JS.InvokeAsync<string>("URL.createObjectURL", imageArray);
 			imgSrc = await JS.InvokeAsync<string>("createObjectURLFromBA", imageArray);
 			return imgSrc;
 		}
@@ -232,26 +205,10 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			};
 		}
 
-		public SKBitmap FilterGaussian(SKBitmap bitmap, int kernelSize)
-		{
-			float[] kernel = GaussianKernel(kernelSize);
-			if (SService.newBitmap)
-			{
-				//bitmap2 = FilterGrayscale(bitmap);
-				bitmap2 = bitmap;
-				SService.newBitmap = false;
-			}
-			int offset = (int)Math.Floor(kernelSize / 2f);
-			return ApplyFilter(bitmap2, imageFilter: SKImageFilter.CreateMatrixConvolution(
-				new SKSizeI(kernelSize, kernelSize), kernel, gain: 1, bias: 0,
-				kernelOffset: new SKPointI(offset, offset), SKShaderTileMode.Clamp, convolveAlpha: false));
-		}
-
 		public SKBitmap FilterErode(SKBitmap bitmap, int radius)
 		{
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -262,7 +219,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		{
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -275,42 +231,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			ShowMatrix(result);
 			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
 				result));
-		}
-
-		public float[] GaussianKernel(int kernelSize)
-		{
-			float[] kernel = IdentityKernel();
-			switch (kernelSize)
-			{
-				case 3:
-					kernel = new float[]
-					{
-						1, 2, 1,
-						2, 4, 2,
-						1, 2, 1
-					};
-					for (int i = 0; i < kernel.Length; i++)
-					{
-						kernel[i] /= 16;
-					}
-					break;
-				case 5:
-					kernel = new float[]
-					{
-						1, 4, 6, 4, 1,
-						4, 16, 24, 16, 4,
-						6, 24, 36, 24, 6,
-						4, 16, 24, 16, 4,
-						1, 4, 6, 4, 1
-					};
-					for (int i = 0; i < kernel.Length; i++)
-					{
-						kernel[i] /= 256;
-					}
-					break;
-			}
-
-			return kernel;
 		}
 
 		public float Gauss(int x, int y, float sigma)
@@ -326,7 +246,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			ShowKernel(kernel, "gaussian2 krenel");
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -347,7 +266,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				for (int j = 0; j < kernelSize; j++)
 				{
 					kernel[n] = Gauss(i - k, j - k, sigma);
-                    //Console.WriteLine($"kernel[{n}](i, j)=({i}, {j}) = Gauss({i - k}, {j - k}) = {kernel[n]}");
 					n++;
 				}
 			}
@@ -384,7 +302,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = AverageKernel(kernelSize);
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -412,7 +329,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = customKernel;
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -428,7 +344,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = EmbossKernel();
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -455,7 +370,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = SharpenKernel();
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -482,7 +396,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = SobelVerticalKernel();
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -498,7 +411,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = SobelHorizontalKernel();
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -536,7 +448,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float[] kernel = EdgeDetectKernel();
 			if (SService.newBitmap)
 			{
-				//bitmap2 = FilterGrayscale(bitmap);
 				bitmap2 = bitmap;
 				SService.newBitmap = false;
 			}
@@ -557,26 +468,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			};
 			return kernel;
 		}
-
-		//public void Sample()
-  //      {
-		//	byte[] tableR = new byte[256];
-		//	byte[] tableG = new byte[256];
-		//	byte[] tableB = new byte[256];
-		//	byte[] tableA = new byte[256];
-		//	byte R, G, B, A, R2, G2, B2, A2;
-
-		//	R2 = tableR[R];
-		//	G2 = tableG[G];
-		//	B2 = tableB[B];
-		//	A2 = tableA[A];
-
-		//	byte[] tableR = new byte[256];
-		//	byte[] tableG = new byte[256];
-		//	byte[] tableB = new byte[256];
-
-		//	SKColorFilter colorFilter2 = SKColorFilter.CreateTable(null, tableR, tableG, tableB);
-		//}
 
 		public SKBitmap FilterBinary(SKBitmap bitmap, int treshold)
 		{
@@ -602,7 +493,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public SKBitmap ChangeColor(SKBitmap bitmap, int shift, SKColorChannel channel)
 		{
-			//float[] result = BrightnessMatrix(level);
 			float[] result = ColorMatrix(shift, channel);
 			ShowMatrix(result);
 			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
@@ -611,7 +501,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public SKBitmap ChangeColorMulti(SKBitmap bitmap, int shift, bool isRed, bool isGreen, bool isBlue)
 		{
-			//float[] result = BrightnessMatrix(level);
 			float[] result = ColorMatrixMulti(shift, isRed, isGreen, isBlue);
 			ShowMatrix(result);
 			return ApplyFilter(bitmap, SKColorFilter.CreateColorMatrix(
@@ -632,18 +521,15 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			SKColor[] pixels = bitmap.Pixels;
 			if (SService.newBitmap)
 			{
-				//SKColor[] pixels = bitmap.Pixels;
 				pixelsH = new float[pixels.Length];
 				pixelsS = new float[pixels.Length];
 				pixelsL = new float[pixels.Length];
 				for (int i = 0; i < pixels.Length; i++)
 				{
 					pixels[i].ToHsl(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
-                    //pixels[i].ToHsv(out pixelsH[i], out pixelsS[i], out pixelsL[i]);
                 }
 				minL = pixelsL.Min();
 				maxL = pixelsL.Max();
-				//Console.WriteLine($"minL: {minL}, maxL: {maxL}");
 				SService.newBitmap = false;
 			}
 			float oldL, newL;
@@ -652,9 +538,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxL;
 			float newMin = minL - factor;
 			float newMax = maxL + factor;
-			//Console.WriteLine($"oldMin: {oldMin}, oldMax: {oldMax}");
-			//Console.WriteLine($"newMin: {newMin}, newMax: {newMax}, factor: {factor}");
-			// dla ujemnych wartosci factor
 			newMin = Math.Min(newMin, newMax);
 			newMax = Math.Max(newMax, newMin);
 			float newRange = newMax - newMin;
@@ -662,15 +545,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			for (int i = 0; i < pixelsL.Length; i++)
 			{
 				oldL = pixelsL[i];
-				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
-				//og
-				//newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + offset;
 				newL = ((oldL - oldMin) / (oldMax - oldMin)) * newRange + newMin;
 				newL = Math.Clamp(newL, 0f, 100f);
 				pixels[i] = SKColor.FromHsl(pixelsH[i], pixelsS[i], newL);
-                //pixels[i] = SKColor.FromHsv(pixelsH[i], pixelsS[i], newL);
-                //if (i % 10000 == 0)
-                //	Console.WriteLine($"oldL: {oldL}, newL: {newL}");
             }
 			result.Pixels = pixels;
 			return result;
@@ -703,21 +580,12 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public SKBitmap FilterContrastGrayscale(SKBitmap bitmap, int factor)
 		{
-			//bitmap2 = bitmap;
 			if (SService.newBitmap)
 			{
 				bitmap2 = FilterGrayscale(bitmap);
 				pixelValues = bitmap2.Pixels.Select(x => x.Red).ToArray();
-                //SKColor[] pixels = bitmap2.Pixels;
-                //pixelsR = pixels.Select(x => x.Red).ToList();
-                //pixelsG = pixels.Select(x => x.Green).ToList();
-                //pixelsB = pixels.Select(x => x.Blue).ToList();
 			}
 			byte[] table = ContrastTable1(factor, pixelValues);
-            //byte[] table = ContrastTable2(factor, pixelValues);
-            //byte[] table = ContrastTable3(factor, pixelValues);
-            //byte[] table = ContrastTable4(factor, pixelValues);
-            //ShowTable(table.Select(x => (int)x).ToArray(), "contrast table");
             return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
 		}
@@ -751,13 +619,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			int index = 0;
             for (int i = 0; i < height; i++)
             {
-				//int widthMultiple = i * width;
-
 				for (int j = 0; j < width; j++)
                 {
-					//table[i, j] = widthMultiple + j;
 					table[j, i] = index;
-                    //Console.WriteLine($"table[{j}, {i}] = {index}");
 					index++;
 				}
             }
@@ -766,7 +630,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		private SKColor[] GetNeighbourhood(SKPointI start, SKPointI end, int windowLength)
 		{
-			//SKColor[] array = new SKColor[kernelSize* kernelSize];
 			SKColor[] array = new SKColor[windowLength];
 			int index = 0;
 			for (int i = start.X; i <= end.X; i++)
@@ -783,7 +646,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		private (List<byte> windowR, List<byte> windowG, List<byte> windowB, List<SKColor> toRemove) GetWindowSorted
 			(SKPointI start, SKPointI end)
 		{
-			//SKColor[] array = new SKColor[kernelSize* kernelSize];
 			var windowR = new List<byte>();
 			var windowG = new List<byte>();
 			var windowB = new List<byte>();
@@ -795,323 +657,15 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				for (int j = start.Y; j <= end.Y; j++)
 				{
 					pixel = pixelTable[indexTable[start.X, j]];
-					//windowR.Add(pixel.Red);
-					//windowG.Add(pixel.Green);
-					//windowB.Add(pixel.Blue);
 					AddSorted(windowR, pixel.Red);
 					AddSorted(windowG, pixel.Green);
 					AddSorted(windowB, pixel.Blue);
 					toRemove.Add(pixel);
 				}
 			}
-			//windowR.Sort();
-			//windowG.Sort();
-			//windowB.Sort();
 			return (windowR, windowG, windowB, toRemove);
 		}
 
-		// og, improved start, end
-		public SKBitmap FilterMedian2(SKBitmap bitmap, int kernelSize)
-		{
-			//bitmap2 = bitmap;
-			Stopwatch stopwatch = new Stopwatch();
-			if (SService.newBitmap)
-			{
-				//bitmap2 = FilterGrayscale(bitmap);
-
-				bitmap2 = bitmap;
-
-				stopwatch.Reset();
-				stopwatch.Start();
-
-				indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
-
-				stopwatch.Stop();
-				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
-				stopwatch.Reset();
-				stopwatch.Start();
-
-				pixelTable = bitmap2.Pixels;
-
-				stopwatch.Stop();
-				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
-
-				SService.newBitmap = false;
-			}
-			stopwatch.Reset();
-			stopwatch.Start();
-			Console.WriteLine("Start: result");
-
-			SKBitmap result = new SKBitmap(bitmap2.Info);
-			SKColor[] resultPixels = new SKColor[pixelTable.Length];
-
-			SKPointI start = new SKPointI();
-			SKPointI end = new SKPointI();
-			SKColor[] window;
-			SKColor medianPixel;
-			int k = (int)Math.Floor(kernelSize / 2f);
-			int windowLength = kernelSize * kernelSize;
-			int medianIndex = (int)Math.Round(windowLength / 2f);
-			Stopwatch stopwatch2 = new Stopwatch();
-			Stopwatch stopwatch3 = new Stopwatch();
-			Stopwatch stopwatch4 = new Stopwatch();
-			for (int j = k; j < bitmap2.Height - k; j++)
-			{
-				stopwatch2.Start();
-
-				start.Y = j - k;
-				end.Y = j + k;
-
-				stopwatch2.Stop();
-
-				for (int i = k; i < bitmap2.Width - k; i++)
-				{
-					stopwatch2.Start();
-
-					//code
-					//start = new SKPointI(i - k, j - k);
-					//end = new SKPointI(i + k, j + k);
-					start.X = i - k;
-					end.X = i + k;
-
-					stopwatch2.Stop();
-					stopwatch3.Start();
-
-					//code
-					window = GetNeighbourhood(start, end, windowLength);
-
-					stopwatch3.Stop();
-					stopwatch4.Start();
-
-					//v3 fastest, half the time of v1
-					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
-					byte newRed = window[medianIndex].Red;
-					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
-					byte newGreen = window[medianIndex].Green;
-					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
-					byte newBlue = window[medianIndex].Blue;
-					medianPixel = new SKColor(newRed, newGreen, newBlue);
-					stopwatch4.Stop();
-					resultPixels[indexTable[i, j]] = medianPixel;
-				}
-			}
-			result.Pixels = resultPixels;
-
-			stopwatch.Stop();
-			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
-
-			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
-			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
-			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
-
-			return result;
-		}
-
-		// filter median with measure time
-		public SKBitmap FilterMedian3(SKBitmap bitmap, int kernelSize)
-		{
-			void MeasureTime(Stopwatch sw, Action action)
-			{
-				sw.Start();
-				action();
-				sw.Stop();
-			}
-
-			//bitmap2 = bitmap;
-			Stopwatch stopwatch = new Stopwatch();
-			if (SService.newBitmap)
-			{
-				bitmap2 = bitmap;
-
-				stopwatch.Reset();
-				MeasureTime(stopwatch, () =>
-				{
-					indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
-				});
-				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
-
-				stopwatch.Reset();
-				MeasureTime(stopwatch, () =>
-				{
-					pixelTable = bitmap2.Pixels;
-				});
-				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
-
-				SService.newBitmap = false;
-			}
-
-			Stopwatch stopwatch2 = new Stopwatch();
-			Stopwatch stopwatch3 = new Stopwatch();
-			Stopwatch stopwatch4 = new Stopwatch();
-
-			SKBitmap result = new SKBitmap(bitmap2.Info);
-
-			stopwatch.Reset();
-			MeasureTime(stopwatch, () =>
-			{
-				Console.WriteLine("Start: result");
-
-				SKColor[] resultPixels = new SKColor[pixelTable.Length];
-				SKPointI start = new SKPointI();
-				SKPointI end = new SKPointI();
-				SKColor[] window = new SKColor[0];
-				SKColor medianPixel = new SKColor();
-				int k = (int)Math.Floor(kernelSize / 2f);
-				int windowLength = kernelSize * kernelSize;
-				int medianIndex = (int)Math.Round(windowLength / 2f);
-				for (int j = k; j < bitmap2.Height - k; j++)
-				{
-					MeasureTime(stopwatch2, () =>
-					{
-						start.Y = j - k;
-						end.Y = j + k;
-					});
-
-					for (int i = k; i < bitmap2.Width - k; i++)
-					{
-						MeasureTime(stopwatch2, () =>
-						{
-							start.X = i - k;
-							end.X = i + k;
-						});
-
-						MeasureTime(stopwatch3, () =>
-						{
-							window = GetNeighbourhood(start, end, windowLength);
-						});
-
-						MeasureTime(stopwatch3, () =>
-						{
-							//v3 fastest, half the time of v1
-							Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
-							byte newRed = window[medianIndex].Red;
-							Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
-							byte newGreen = window[medianIndex].Green;
-							Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
-							byte newBlue = window[medianIndex].Blue;
-							medianPixel = new SKColor(newRed, newGreen, newBlue);
-						});
-						resultPixels[indexTable[i, j]] = medianPixel;
-					}
-				}
-				result.Pixels = resultPixels;
-
-			});
-			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
-
-			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
-			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
-			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
-
-			return result;
-		}
-
-		// og, improved start, end, latest working
-		public SKBitmap FilterMedian4(SKBitmap bitmap, int kernelSize)
-		{
-			Stopwatch stopwatch = new Stopwatch();
-
-			if (SService.newBitmap)
-			{
-				//bitmap2 = FilterGrayscale(bitmap);
-
-				//code
-				bitmap2 = bitmap;
-
-				stopwatch.Reset();
-				stopwatch.Start();
-
-				//code
-				indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
-
-				stopwatch.Stop();
-				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
-				stopwatch.Reset();
-				stopwatch.Start();
-
-				//code
-				pixelTable = bitmap2.Pixels;
-
-				stopwatch.Stop();
-				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
-
-				//code
-				SService.newBitmap = false;
-			}
-
-			stopwatch.Reset();
-			stopwatch.Start();
-			Console.WriteLine("Start: result");
-
-			//code
-			SKBitmap result = new SKBitmap(bitmap2.Info);
-			SKColor[] resultPixels = new SKColor[pixelTable.Length];
-			SKPointI start = new SKPointI();
-			SKPointI end = new SKPointI();
-			SKColor[] window;
-			SKColor medianPixel;
-			int k = (int)Math.Floor(kernelSize / 2f);
-			int windowLength = kernelSize * kernelSize;
-			int medianIndex = (int)Math.Round(windowLength / 2f);
-			Stopwatch stopwatch2 = new Stopwatch();
-			Stopwatch stopwatch3 = new Stopwatch();
-			Stopwatch stopwatch4 = new Stopwatch();
-
-			for (int j = k; j < bitmap2.Height - k; j++)
-			{
-				stopwatch2.Start();
-
-				//code
-				start.Y = j - k;
-				end.Y = j + k;
-
-				stopwatch2.Stop();
-
-				for (int i = k; i < bitmap2.Width - k; i++)
-				{
-					stopwatch2.Start();
-
-					//code
-					start.X = i - k;
-					end.X = i + k;
-
-					stopwatch2.Stop();
-					stopwatch3.Start();
-
-					//code
-					window = GetNeighbourhood(start, end, windowLength);
-
-					stopwatch3.Stop();
-					stopwatch4.Start();
-
-					//code
-					//v3 fastest, half the time of v1
-					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
-					byte newRed = window[medianIndex].Red;
-					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
-					byte newGreen = window[medianIndex].Green;
-					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
-					byte newBlue = window[medianIndex].Blue;
-					medianPixel = new SKColor(newRed, newGreen, newBlue);
-					resultPixels[indexTable[i, j]] = medianPixel;
-
-					stopwatch4.Stop();
-				}
-			}
-			//code
-			result.Pixels = resultPixels;
-
-			stopwatch.Stop();
-			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
-
-			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
-			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
-			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
-
-			return result;
-		}
-
-		// fastest, still slow
 		public SKBitmap FilterMedian(SKBitmap bitmap, int kernelSize)
 		{
 			if (SService.newBitmap)
@@ -1126,7 +680,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			stopwatch.Start();
 			Console.WriteLine("Start: result");
 
-			//code
 			SKBitmap result = new SKBitmap(bitmap2.Info);
 			SKColor[] resultPixels = new SKColor[pixelTable.Length];
 			SKPointI start = new SKPointI();
@@ -1164,19 +717,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
                     for (int n = start.Y; n <= end.Y; n++)
                     {
-						//int index = 0;
-						//try
-                        //{
-						//	index = indexTable[end.X, n];
-                        //}
-                        //catch (Exception)
-                        //{
-                        //    Console.WriteLine($"{indexTable.GetLength(0)-1}, {indexTable.GetLength(1)-1}, " +
-                        //        $"{end.X}, {n}");
-						//	throw;
-                        //}
-						//pixel = pixelTable[index];
-
 						pixel = pixelTable[indexTable[end.X, n]];
                         AddSorted(windowR, pixel.Red);
 						AddSorted(windowG, pixel.Green);
@@ -1204,114 +744,11 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return result;
 		}
 
-		// og
-		public SKBitmap FilterMedian1(SKBitmap bitmap, int kernelSize)
-		{
-			//bitmap2 = bitmap;
-			Stopwatch stopwatch = new Stopwatch();
-			if (SService.newBitmap)
-			{
-				//bitmap2 = FilterGrayscale(bitmap);
-
-				//code(
-				bitmap2 = bitmap;
-				//code)
-				stopwatch.Reset();
-				stopwatch.Start();
-				//code(
-                indexTable = GetIndexTable(bitmap2.Width, bitmap2.Height);
-				//code)
-				stopwatch.Stop();
-				Console.WriteLine("GetIndexTable: {0} ms", stopwatch.ElapsedMilliseconds);
-				stopwatch.Reset();
-				stopwatch.Start();
-				//code(
-				pixelTable = bitmap2.Pixels;
-				//code)
-				stopwatch.Stop();
-				Console.WriteLine("bitmap2.Pixels: {0} ms", stopwatch.ElapsedMilliseconds);
-				//code(
-				SService.newBitmap = false;
-				//code)
-			}
-			stopwatch.Reset();
-			stopwatch.Start();
-			Console.WriteLine("Start: result");
-
-			SKBitmap result = new SKBitmap(bitmap2.Info);
-            SKColor[] resultPixels = new SKColor[pixelTable.Length];
-
-			SKPointI start, end;
-			SKColor[] window;
-			SKColor medianPixel;
-			int k = (int)Math.Floor(kernelSize / 2f);
-			int windowLength = kernelSize * kernelSize;
-			int medianIndex = (int)Math.Round(windowLength / 2f);
-			Stopwatch stopwatch2 = new Stopwatch();
-			Stopwatch stopwatch3 = new Stopwatch();
-			Stopwatch stopwatch4 = new Stopwatch();
-			for (int i = 0; i < bitmap2.Width; i++)
-            {
-				for (int j = 0; j < bitmap2.Height; j++)
-				{
-					//start = new SKPointI(Math.Clamp(i - k, 0, bitmap.Width - 1),
-					//					Math.Clamp(j - k, 0, bitmap.Height - 1));
-					stopwatch2.Start();
-					//code(
-					start = new SKPointI(Math.Max(i - k, 0),
-										Math.Max(j - k, 0));
-					end = new SKPointI(Math.Min(i + k, bitmap.Width - 1),
-										Math.Min(j + k, bitmap.Height - 1));
-					//code)
-					stopwatch2.Stop();
-					stopwatch3.Start();
-					//code(
-					window = GetNeighbourhood(start, end, windowLength);
-					//code)
-					stopwatch3.Stop();
-					//medianIndex = (int)Math.Round(window.Length/2f);
-					stopwatch4.Start();
-					//code(
-					//v1
-					//medianPixel = new SKColor(window.OrderBy(x => x.Red).ElementAt(medianIndex).Red,
-					//						window.OrderBy(x => x.Green).ElementAt(medianIndex).Green,
-					//						window.OrderBy(x => x.Blue).ElementAt(medianIndex).Blue);
-					//v2 slower than v1
-					//medianPixel = new SKColor(window.OrderBy(x => x.Red).ToList()[medianIndex].Red,
-					//						window.OrderBy(x => x.Green).ToList()[medianIndex].Green,
-					//						window.OrderBy(x => x.Blue).ToList()[medianIndex].Blue);
-					//v3 fastest, half the time of v1
-					Array.Sort(window, (x, y) => x.Red.CompareTo(y.Red));
-					byte newRed = window[medianIndex].Red;
-					Array.Sort(window, (x, y) => x.Green.CompareTo(y.Green));
-					byte newGreen = window[medianIndex].Green;
-					Array.Sort(window, (x, y) => x.Blue.CompareTo(y.Blue));
-					byte newBlue = window[medianIndex].Blue;
-					medianPixel = new SKColor(newRed, newGreen, newBlue);
-					//code)
-					stopwatch4.Stop();
-					resultPixels[indexTable[i, j]] = medianPixel;
-                    //Console.WriteLine($"resultPixels[indexTable[i = {i}, j = {j}] = {indexTable[i, j]}] = ({medianPixel})");
-				}
-			}
-			result.Pixels = resultPixels;
-
-			stopwatch.Stop();
-			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
-			
-			Console.WriteLine("start, end: {0} ms", stopwatch2.ElapsedMilliseconds);
-			Console.WriteLine("window: {0} ms", stopwatch3.ElapsedMilliseconds);
-			Console.WriteLine("medianPixel: {0} ms", stopwatch4.ElapsedMilliseconds);
-
-			return result;
-		}
-
 		public SKBitmap EqualizeHistogram(SKBitmap bitmap)
         {
 			bitmap2 = FilterGrayscale(bitmap);
 			IEnumerable<byte> pixelList = bitmap2.Pixels.Select(x => x.Red);
 			byte[] table = EqualizedHistogramTable(pixelList);
-			//ShowTable(table.Select(x => (int)x).ToArray(), "EqualizeHistogram table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
 		}
@@ -1326,7 +763,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				SService.newBitmap = false;
 			}
 			byte[] table = StretchedHistogramTable(histogramArray, cutoff);
-			//ShowTable(table.Select(x => (int)x).ToArray(), "EqualizeHistogram table");
 			return ApplyFilter(bitmap2, SKColorFilter.CreateTable(
 				null, table, table, table));
 		}
@@ -1336,14 +772,9 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			int pixelsLength = pixelValues.Count();
             byte centileMin = Percentile(histogram, cutoff);
             byte centileMax = Percentile(histogram, 100 - cutoff);
-            //Console.WriteLine($"min: {pixels.Min()}, max: {pixels.Max()}");
             Console.WriteLine($"centileMin: {centileMin}, centileMax: {centileMax}");
 
             byte[] table = new byte[256];
-			//        for (int i = 0; i < table.Length; i++)
-			//        {
-			//table[i] = (byte)i;
-			//        }
 			for (int i = 0; i < centileMin; i++)
 			{
 				table[i] = 0;
@@ -1410,33 +841,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return AddArrays(offsetMatrix, IdentityMatrix());
 		}
 
-		//public void Sample()
-  //      {
-		//	float value;
-		//	var opacity = new float[]{
-		//		0, 0, 0, 0, 0,
-		//		0, 0, 0, 0, 0,
-		//		0, 0, 0, 0, 0,
-		//		0, 0, 0, 0, value};
-		//	float shiftRed, shiftGreen, shiftBlue;
-		//	var colorSlider = new float[]{
-		//		0, 0, 0, 0, shiftRed,
-		//		0, 0, 0, 0, shiftGreen,
-		//		0, 0, 0, 0, shiftBlue,
-		//		0, 0, 0, 0, 0};
-		//	var grayscale = new float[]{
-		//		0.21f, 0.72f, 0.07f, 0, 0,
-		//		0.21f, 0.72f, 0.07f, 0, 0,
-		//		0.21f, 0.72f, 0.07f, 0, 0,
-		//		0,     0,     0,     1, 0};
-		//	float value;
-		//	var grayscale = new float[]{
-		//		0, 0, 0, 0, value,
-		//		0, 0, 0, 0, value,
-		//		0, 0, 0, 0, value,
-		//		0, 0, 0, 0, 0};
-		//}
-
 		public float[] OpacityMatrix(int level)
 		{
 			float level2 = (float)level / 255;
@@ -1452,7 +856,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public float[] ColorMatrix(int shift, SKColorChannel channel)
 		{
-			// fifth column needs values from 0-1, shift should be (-255)-255 
 			float shift2 = (float)shift / 255;
 			float[] shiftMatrix = new float[]
 			{
@@ -1466,7 +869,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 		public float[] ColorMatrixMulti(int shift, bool isRed, bool isGreen, bool isBlue)
 		{
-			// fifth column needs values from 0-1, shift should be (-255)-255 
 			float shift2 = (float)shift / 255;
 			float[] shiftMatrix = new float[]
 			{
@@ -1503,23 +905,6 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			return table;
 		}
 
-		//public void Sample()
-  //      {
-		//	float oldMin, oldMax;
-		//	float newMin = oldMin - factor;
-		//	float newMax = oldMax + factor;
-		//	float newRange = newMax - newMin;
-		//	byte[] table = new byte[256];
-		//	for (int i = 0; i < table.Length; i++){
-		//		table[i] = (byte)i;
-		//	}
-		//	for (int i = (int)oldMin; i <= oldMax; i++){
-		//		double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
-		//		table[i] = (byte)Math.Clamp(newValue, 0, 255);
-		//	}
-		//}
-
-		// casts to (oldmin-f ; oldmax+f)
 		public byte[] ContrastTable1(int factor, IEnumerable<byte> pixels)
 		{
 			if (SService.newBitmap)
@@ -1538,148 +923,16 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			float oldMax = maxValue;
 			float newMin = minValue - factor;
 			float newMax = maxValue + factor;
-            // dla ujemnych wartosci factor
-   //         Console.WriteLine($"{newMin}, {newMax} ->");
-			//newMin = Math.Min(newMin, newMax);
-			//newMax = Math.Max(newMax, newMin);
-			//Console.WriteLine($"-> {newMin}, {newMax}.");
 			float newRange = newMax - newMin;
 
 			for (int i = (int)oldMin; i <= oldMax; i++)
 			{
-				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
 				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
 				table[i] = (byte)Math.Clamp(newValue, 0, 255);
 			}
 
 			return table;
 		}
-
-		// centers destination range around 128
-		public byte[] ContrastTable2(int factor, IEnumerable<byte> pixels)
-		{
-			if (SService.newBitmap)
-			{
-				minValue = pixels.Min();
-				maxValue = pixels.Max();
-				//histogram = GetHistogram2(pixels);
-				SService.newBitmap = false;
-				//Console.WriteLine($"min:{minValue}, max:{maxValue}");
-				//ShowTable(histogram, "histogram");
-			}
-			//byte lower = (byte)(minValue - factor);
-			//byte upper = (byte)(maxValue + factor);
-			byte[] table = new byte[256];
-            for (int i = 0; i < table.Length; i++)
-            {
-				table[i] = (byte)i;
-            }
-
-			float oldMin = minValue;
-			float oldMax = maxValue;
-			float newMin = minValue - factor;
-			float newMax = maxValue + factor;
-			// dla ujemnych wartosci factor
-			newMin = Math.Min(newMin, newMax);
-			newMax = Math.Max(newMax, newMin);
-			float newRange = newMax - newMin;
-			float offset = (255 - newRange) / 2f;
-			// dla ujemnych factor
-			newMin = Math.Min(newMin, newMax);
-			newMax = Math.Max(newMax, newMin);
-			
-
-			for (int i = (int)oldMin; i <= oldMax; i++)
-			{
-				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
-				float newValue = ((i - oldMin) / (oldMax - oldMin)) * newRange + offset;
-				table[i] = (byte)Math.Clamp(newValue, 0, 255);
-			}
-			
-			return table;
-		}
-
-		// casts to max(oldmin-f,0):min(oldmax+f,255)
-		public byte[] ContrastTable3(int factor, IEnumerable<byte> pixels)
-		{
-			if (SService.newBitmap)
-			{
-				minValue = pixels.Min();
-				maxValue = pixels.Max();
-				SService.newBitmap = false;
-			}
-			byte[] table = new byte[256];
-			for (int i = 0; i < table.Length; i++)
-			{
-				table[i] = (byte)i;
-			}
-
-			float oldMin = minValue;
-			float oldMax = maxValue;
-			float newMin = Math.Max(minValue - factor, 0);
-			float newMax = Math.Min(maxValue + factor, 255);
-			// dla ujemnych wartosci factor
-			newMin = Math.Min(newMin, newMax);
-			newMax = Math.Max(newMax, newMin);
-			float newRange = newMax - newMin;
-
-			for (int i = (int)oldMin; i <= oldMax; i++)
-			{
-				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
-				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
-				//table[i] = (byte)Math.Clamp(newValue, 0, 255);
-				table[i] = (byte)newValue;
-			}
-
-			return table;
-		}
-
-		// should be percentiles 5,95 instead of oldmin, oldmax
-		// casts to max(oldmin-f,0):min(oldmax+f,255), then if (newmin==0 && newmax==255) casts to (oldmin-f ; oldmax+f)
-		public byte[] ContrastTable4(int factor, IEnumerable<byte> pixels)
-		{
-			if (SService.newBitmap)
-			{
-				minValue = pixels.Min();
-				maxValue = pixels.Max();
-				SService.newBitmap = false;
-			}
-			byte[] table = new byte[256];
-			for (int i = 0; i < table.Length; i++)
-			{
-				table[i] = (byte)i;
-			}
-
-			float oldMin = minValue;
-			float oldMax = maxValue;
-			float newMin = minValue - factor;
-			float newMax = maxValue + factor;
-			if (newMin >= 0 || newMax <= 255)
-			{
-				newMin = Math.Max(newMin, 0);
-				newMax = Math.Min(newMax, 255);
-			}
-			// dla ujemnych wartosci factor
-			newMin = Math.Min(newMin, newMax);
-			newMax = Math.Max(newMax, newMin);
-			float newRange = newMax - newMin;
-
-			for (int i = (int)oldMin; i <= oldMax; i++)
-			{
-				//float newValue = ((i - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
-				double newValue = Math.Round(((i - oldMin) / (oldMax - oldMin)) * newRange + newMin);
-				table[i] = (byte)Math.Clamp(newValue, 0, 255);
-            }
-
-			return table;
-		}
-
-		//histogramArray = GetHistogramArray(pixels);
-		//byte centileMin = Percentile(histogramArray, 2);
-		//byte centileMax = Percentile(histogramArray, 98);
-		//Console.WriteLine("inside");
-		//Console.WriteLine($"min: {pixels.Min()}, max: {pixels.Max()}");
-		//Console.WriteLine($"centile5: {centileMin}, centile95: {centileMax}");
 
 		public byte Percentile(int[] histogram, int percent)
         {
@@ -1711,36 +964,13 @@ namespace PracaInz04.Client.ImageProcessingClasses
 		{
 			List<byte> pixelsList = pixels.ToList();
 
-			//Stopwatch stopwatch = new Stopwatch();
-			//stopwatch.Start();
-
 			int[] array = new int[256];
-			// fastest - around 110ms for cat01 500.jpg red (List<byte> pixelsList)
 			foreach (var pixel in pixelsList)
 			{
 				array[pixel]++;
 			}
 			return array;
-			// fast - around 210ms for cat01 500.jpg red (IEnumerable<byte> pixels)
-			//foreach(var pixel in pixels)
-			//{
-			//    array[pixel]++;
-			//}
-			// VERY slow, both
-			//for (int i = 0; i < pixels.Count(); i++)
-			//{
-			//    Console.WriteLine(i);
-			//    array[pixels.ElementAt(i)]++;
-			//    array[pixelsList[i]]++;
-			//}
-			//stopwatch.Stop();
-			//Console.WriteLine("array2: {0} ms", stopwatch.ElapsedMilliseconds);
 		}
-
-		//public byte ByteRange(int number)
-		//      {
-		//	return (byte)Math.Clamp(number, 0, 255);
-		//      }
 
 		public float[] IdentityMatrix()
         {

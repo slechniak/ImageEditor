@@ -4,7 +4,6 @@
 @inject StateService SService
 
 <label for="formFile" class="form-label fw-bold lead text-secondary">Upload an image</label>
-@*<InputFile OnChange="OnFileUpload" class="form-control" id="customFile"/>*@
 <InputFile OnChange="OnFileUpload" class="form-control" id="formFile"/>
 
 @code {
@@ -13,22 +12,13 @@
     public EventCallback ParentMethod { get; set; }
     public async Task OnFileUpload(InputFileChangeEventArgs e)
     {
-        // get image array, content type, other data
         IBrowserFile imageFile = e.File;
         byte[] imageArray = new byte[imageFile.Size];
         await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
         string imageType = imageFile.ContentType;
 
-        // add original and data to idb
-        //var addedResult = await IDbManager.AddImageDataToIDb(imageArray, imageFile.Name, imageType);
-
-        // add resized to idb
-        //var addedResult2 = await IDbManager.AddImageResizedToIDb(imageArray, imageFile.Name, imageType);
-
-        // add image to idb
         int imageId = await IDbManager.AddImageToIDb(imageArray, imageFile.Name);
 
-        //GoToEditor(imageFile.Name);
         await GoToEditor(imageFile.Name, imageId);
 
         await ParentMethod.InvokeAsync();
@@ -38,14 +28,8 @@
 
     public async Task GoToEditor(string imageName, int imageId)
     {
-        // save imageName to local storage
         await LSManager.SaveImageName(imageName);
         await LSManager.SaveImageId(imageId);
-        // save imageName to state service
-        //SService.ImageName = imageName;
-        //NavigationManager.NavigateTo($"editor/{imageName}");
-        //NavigationManager.NavigateTo($"editor3");
-        //NavigationManager.NavigateTo($"testpage");
         NavigationManager.NavigateTo($"editor");
     }
 }

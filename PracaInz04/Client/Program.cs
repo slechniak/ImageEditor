@@ -28,12 +28,6 @@ builder.Services.AddScoped<ImageProcessing>();
 builder.Services.AddScoped<LocalStorageManager>();
 builder.Services.AddBlazoredModal();
 
-// load data from local storage - old
-//var host = builder.Build();
-//var xstateService = host.Services.GetRequiredService<StateService>();
-//await xstateService.GetFromLocalStorage();
-
-// load data from local storage - new
 var host = builder.Build();
 var LSManager = host.Services.GetRequiredService<LocalStorageManager>();
 await LSManager.GetFromLocalStorage();
