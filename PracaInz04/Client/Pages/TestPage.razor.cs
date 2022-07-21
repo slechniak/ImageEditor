@@ -316,7 +316,7 @@ namespace PracaInz04.Client.Pages
                     }
                 }
             }
-            Console.WriteLine("painted");
+            //Console.WriteLine("painted");
         }
 
         private void OnTiltAngleChange(ChangeEventArgs e)
@@ -508,11 +508,11 @@ namespace PracaInz04.Client.Pages
 
             if (result.Cancelled)
             {
-                Console.WriteLine("Modal was cancelled");
+                //Console.WriteLine("Modal was cancelled");
             }
             else
             {
-                Console.WriteLine("Modal was accepted (resize)");
+                //Console.WriteLine("Modal was accepted (resize)");
                 AddBitmap((SKBitmap)result.Data);
                 skiaView.Invalidate();
             }
@@ -621,8 +621,8 @@ namespace PracaInz04.Client.Pages
                     ResetTilt();
                 skiaView.Invalidate();
             }
-            else
-                Console.WriteLine("No selection error message");
+            //else
+                //Console.WriteLine("No selection error message");
         }
 
         private void ResetPanOffset()
@@ -655,7 +655,7 @@ namespace PracaInz04.Client.Pages
                 if (imageOriginal2 != null)
                 {
                     sKBitmap = SKBitmap.Decode(imageOriginal2.Array);
-                    Console.WriteLine(sKBitmap.ColorType);
+                    //Console.WriteLine(sKBitmap.ColorType);
                     SService.originalBitmap = sKBitmap;
                     AddBitmap(sKBitmap);
                 }

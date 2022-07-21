@@ -55,7 +55,7 @@
 
     private async Task DownloadImage()
     {
-        Console.WriteLine($"DownloadImage: {filename.Name}.{filename.Format}");
+        //Console.WriteLine($"DownloadImage: {filename.Name}.{filename.Format}");
         await ModalInstance.CancelAsync();
         await SService.Progress(Modal, DownloadFileFromStream, message: "Converting...");
     }

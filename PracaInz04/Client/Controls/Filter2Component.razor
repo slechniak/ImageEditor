@@ -27,6 +27,9 @@
                     case FilterType.SobelHorizontal:
                         @:Sobel horizontal
                         break;
+                     case FilterType.Median:
+                        @:Median (slow)
+                        break;
                     default:
                         @fType
                         break;
@@ -226,8 +229,8 @@
             str += "\n";
             toCopy += ";";
         }
-        Console.WriteLine(str);
-        Console.WriteLine(toCopy);
+        ////Console.WriteLine(str);
+        //Console.WriteLine(toCopy);
     }
 
     public async Task FilterAndShow()
@@ -264,7 +267,7 @@
                 customKernel = ImageProc.SharpenKernel();
                 break;
             case ImageProcessing.FilterType.Gaussian:
-                Console.WriteLine($"gausSize2: {gaussSize2}, sigma: {sigma}");
+                //Console.WriteLine($"gausSize2: {gaussSize2}, sigma: {sigma}");
                 result = ImageProc.FilterGaussian2(result, gaussSize2, sigma);
                 break;
             case ImageProcessing.FilterType.EdgeDetect:
@@ -368,8 +371,8 @@
         kernelSize = Math.Clamp(kernelSize, minKernel, maxKernel);
         if (kernelSize % 2 != 0)
             await FilterAndShow();
-        else
-            Console.WriteLine($"even kernel size {kernelSize}");
+        //else
+            //Console.WriteLine($"even kernel size {kernelSize}");
     }
 
     private async Task OnKernelGaussChange(ChangeEventArgs e)
@@ -378,8 +381,8 @@
         gaussSize = Math.Clamp(gaussSize, minKernelGauss, maxKernelGauss);
         if (gaussSize % 2 != 0)
             await FilterAndShow();
-        else
-            Console.WriteLine($"even kernel size {gaussSize}");
+        //else
+            //Console.WriteLine($"even kernel size {gaussSize}");
     }
 
     private async Task OnKernelGauss2Change(ChangeEventArgs e)
@@ -388,8 +391,8 @@
         gaussSize2 = Math.Clamp(gaussSize2, minKernelGauss2, maxKernelGauss2);
         if (gaussSize2 % 2 != 0)
             await FilterAndShow();
-        else
-            Console.WriteLine($"even kernel size {gaussSize2}");
+        //else
+            //Console.WriteLine($"even kernel size {gaussSize2}");
     }
 
     private async Task OnMedianKernelChange(ChangeEventArgs e)
@@ -398,8 +401,8 @@
         medianKernel = Math.Clamp(medianKernel, minMedianKernel, maxMedianKernel);
         if (medianKernel % 2 != 0)
             await FilterAndShow();
-        else
-            Console.WriteLine($"even kernel size {gaussSize2}");
+        //else
+            //Console.WriteLine($"even kernel size {gaussSize2}");
     }
 
     private async Task OnSigmaChange(ChangeEventArgs e)
@@ -423,7 +426,7 @@
         {
             str += $"{customKernel[i]}, ";
         }
-        Console.WriteLine(str);
+        //Console.WriteLine(str);
         filterType = FilterType.Custom;
         await FilterAndShow();
     }

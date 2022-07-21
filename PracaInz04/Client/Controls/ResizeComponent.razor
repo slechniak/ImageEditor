@@ -123,10 +123,10 @@
 
     private async Task ResizeImage()
     {
-        Console.WriteLine($"w: {size.Width}, h: {size.Height}");
+        //Console.WriteLine($"w: {size.Width}, h: {size.Height}");
         if (size.Width > 0 && size.Height > 0)
         {
-            Console.WriteLine("resize");
+            //Console.WriteLine("resize");
             SKBitmap resizedBitmap = ImgProc.ResizeSKBitmap(bitmap, size.Width, size.Height);
             ModalInstance.CloseAsync(ModalResult.Ok<SKBitmap>(resizedBitmap));
 

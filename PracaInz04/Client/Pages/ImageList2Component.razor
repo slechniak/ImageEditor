@@ -96,7 +96,7 @@
     public async Task SetResizedImages()
     {
         resizedImages2 = await IndexedDbContext.GetAll<ImageResized2>();
-        Console.WriteLine("SetResizedImages ended");
+        //Console.WriteLine("SetResizedImages ended");
     }
 
     public async Task SetImageInfos()
@@ -115,6 +115,6 @@
                 Size = (float)image.OriginalSize/(1024*1024)
             });
         }
-        Console.WriteLine("SetImageInfos ended");
+        //Console.WriteLine("SetImageInfos ended");
     }
 }

@@ -294,7 +294,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				}
 				counter++;
 			}
-			Console.WriteLine(s);
+			//Console.WriteLine(s);
 		}
 
 		public SKBitmap FilterAverage(SKBitmap bitmap, int kernelSize)
@@ -316,7 +316,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			int kernelLength = kernelSize * kernelSize;
 			float[] kernel = new float[kernelLength];
 			float value = 1f / (kernelLength);
-			Console.WriteLine($"value: {value} kernelSize: {kernelSize}");
+			//Console.WriteLine($"value: {value} kernelSize: {kernelSize}");
 			for (int i = 0; i < kernel.Length; i++)
 			{
 				kernel[i] = value;
@@ -678,7 +678,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 
 			Stopwatch stopwatch = new Stopwatch();
 			stopwatch.Start();
-			Console.WriteLine("Start: result");
+			//Console.WriteLine("Start: result");
 
 			SKBitmap result = new SKBitmap(bitmap2.Info);
 			SKColor[] resultPixels = new SKColor[pixelTable.Length];
@@ -739,7 +739,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			result.Pixels = resultPixels;
 
 			stopwatch.Stop();
-			Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
+			//Console.WriteLine("Stop: result: {0} ms", stopwatch.ElapsedMilliseconds);
 
 			return result;
 		}
@@ -772,7 +772,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			int pixelsLength = pixelValues.Count();
             byte centileMin = Percentile(histogram, cutoff);
             byte centileMax = Percentile(histogram, 100 - cutoff);
-            Console.WriteLine($"centileMin: {centileMin}, centileMax: {centileMax}");
+            //Console.WriteLine($"centileMin: {centileMin}, centileMax: {centileMax}");
 
             byte[] table = new byte[256];
 			for (int i = 0; i < centileMin; i++)
@@ -1088,7 +1088,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 				}
 				counter++;
 			}
-            Console.WriteLine(s);
+            //Console.WriteLine(s);
 		}
 
 		public void ShowTable(int[] a, string title)
@@ -1098,7 +1098,7 @@ namespace PracaInz04.Client.ImageProcessingClasses
 			{
 				s += $"{i}>{a[i]}, ";
 			}
-			Console.WriteLine(s);
+			//Console.WriteLine(s);
 		}
 	}
 }

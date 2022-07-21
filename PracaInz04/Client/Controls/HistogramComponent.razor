@@ -145,7 +145,7 @@
 
     private async Task RedrawHistogram()
     {
-        Console.WriteLine($"{SService.isRed}, {SService.isGreen}, {SService.isBlue}");
+        //Console.WriteLine($"{SService.isRed}, {SService.isGreen}, {SService.isBlue}");
         if (SService.isRed || SService.isGreen || SService.isBlue)
         {
             await SetData();
@@ -155,7 +155,7 @@
 
     private async Task SetData()
     {
-        Console.WriteLine("RedrawHistogram > SetData");
+        //Console.WriteLine("RedrawHistogram > SetData");
 
         maxR = 1;
         maxG = 1;
@@ -213,7 +213,7 @@
             array[pixels[i]]++;
         }
         stopwatch.Stop();
-        Console.WriteLine("array: {0} ms", stopwatch.ElapsedMilliseconds);
+        //Console.WriteLine("array: {0} ms", stopwatch.ElapsedMilliseconds);
 
         stopwatch.Reset();
         stopwatch.Start();
@@ -226,7 +226,7 @@
                     };
         }
         stopwatch.Stop();
-        Console.WriteLine("resultH: {0} ms", stopwatch.ElapsedMilliseconds);
+        //Console.WriteLine("resultH: {0} ms", stopwatch.ElapsedMilliseconds);
 
         return resultH;
     }
