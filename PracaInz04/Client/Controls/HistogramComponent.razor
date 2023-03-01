@@ -1,0 +1,288 @@
+﻿@using Radzen.Blazor
+@using System.Diagnostics
+@inject StateService SService
+@inject ImageProcessing ImageProc
+
+<p class="fs-6 fw-bold m-2">Histogram</p>
+<div class="container my-2">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@SService.isRed" id="flexCheckChecked6"
+            @onchange="() => ToggleColor(SKColorChannel.R)">
+        <label class="form-check-label" for="flexCheckChecked6">Red</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@SService.isGreen" id="flexCheckChecked5"
+            @onchange="() => ToggleColor(SKColorChannel.G)">
+        <label class="form-check-label" for="flexCheckChecked5">Green</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@SService.isBlue" id="flexCheckChecked4"
+            @onchange="() => ToggleColor(SKColorChannel.B)">
+        <label class="form-check-label" for="flexCheckChecked4">Blue</label>
+    </div>
+</div>
+
+@if(dataIsSet)
+{
+    <div class="w-100 ps-2 my-2">
+        @if (SService.isRed)
+        {
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListR" CategoryProperty="Value"  StrokeWidth="@strokeWidth" ValueProperty="Count"
+                Stroke="@colorRed" Fill="@colorRed">
+                    <TooltipTemplate Context="data">
+                        <div>
+                            Value: <strong>@data.Value</strong>
+                            <br />
+                            % of red: <strong>@Percent(data.Count)</strong>%
+                            <br />
+                        </div>
+                    </TooltipTemplate>
+                </RadzenColumnSeries>
+
+                <RadzenCategoryAxis Max="255" Step="50">
+                </RadzenCategoryAxis>
+
+                <RadzenValueAxis Min="0" Max="@maxR" Step="@stepR" Formatter="@Percent">
+                    <RadzenGridLines Visible="true"/>
+                </RadzenValueAxis>
+
+                <RadzenLegend Visible="false" />
+            </RadzenChart>
+        }
+        @if (SService.isGreen)
+        {
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListG" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
+                Stroke="@colorGreen" Fill="@colorGreen">
+                    <TooltipTemplate Context="data">
+                        <div>
+                            Value: <strong>@data.Value</strong>
+                            <br />
+                            % of green: <strong>@Percent(data.Count)</strong>%
+                        </div>
+                    </TooltipTemplate>
+                </RadzenColumnSeries>
+
+                <RadzenCategoryAxis Max="255" Step="50">
+                </RadzenCategoryAxis>
+
+                <RadzenValueAxis Min="0" Max="@maxG" Step="@stepG" Formatter="@Percent">
+                    <RadzenGridLines Visible="true"/>
+                </RadzenValueAxis>
+
+                <RadzenLegend Visible="false" />
+            </RadzenChart>
+        }
+        @if (SService.isBlue)
+        {
+            <RadzenChart ColorScheme="ColorScheme.Monochrome" Style=@($"width: 100%; aspect-ratio: {aspectRatio}; height: auto;")>
+                <RadzenColumnSeries Data="@histogramListB" CategoryProperty="Value" StrokeWidth="@strokeWidth" ValueProperty="Count"
+                Stroke="@colorBlue" Fill="@colorBlue">
+                    <TooltipTemplate Context="data">
+                        <div>
+                            Value: <strong>@data.Value</strong>
+                            <br />
+                            % of blue: <strong>@Percent(data.Count)</strong>%
+                        </div>
+                    </TooltipTemplate>
+                </RadzenColumnSeries>
+
+                <RadzenCategoryAxis Max="255" Step="50">
+                </RadzenCategoryAxis>
+
+                <RadzenValueAxis Min="0" Max="@maxB" Step="@stepB" Formatter="@Percent">
+                    <RadzenGridLines Visible="true"/>
+                </RadzenValueAxis>
+
+                <RadzenLegend Visible="false" />
+            </RadzenChart>
+        }
+    </div>
+}
+
+@code {
+
+    class HistogramItem
+    {
+        public byte Value { get; set; }
+        public int Count { get; set; }
+        public int Max { get; set; }
+    }
+
+    HistogramItem[] histogramR;
+    HistogramItem[] histogramG;
+    HistogramItem[] histogramB;
+    List<HistogramItem> histogramListR;
+    List<HistogramItem> histogramListG;
+    List<HistogramItem> histogramListB;
+    int pixelsLength;
+    int step;
+    bool dataIsSet = false;
+    SKColorChannel channel = SKColorChannel.R;
+    string barColor = colorRed;
+    static string colorRed = "rgba(255, 0, 0, 0.5)";
+    static string colorGreen = "rgba(0, 255, 0, 0.5)";
+    static string colorBlue = "rgba(0, 0, 255, 0.5)";
+    double strokeWidth = 2;
+    string aspectRatio = "4/3";
+    int maxR = 1;
+    int maxG = 1;
+    int maxB = 1;
+    int stepR = 1;
+    int stepG = 1;
+    int stepB = 1;
+
+    private string Percent(int value)
+    {
+        return Math.Round((double)value / pixelsLength * 100, 2).ToString();
+    }
+
+    private string Percent(object value)
+    {
+        return Math.Round((double)value / pixelsLength * 100, 2).ToString();
+    }
+
+    private async Task RedrawHistogram()
+    {
+        //Console.WriteLine($"{SService.isRed}, {SService.isGreen}, {SService.isBlue}");
+        if (SService.isRed || SService.isGreen || SService.isBlue)
+        {
+            await SetData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetData()
+    {
+        //Console.WriteLine("RedrawHistogram > SetData");
+
+        maxR = 1;
+        maxG = 1;
+        maxB = 1;
+
+        SKColor[] pixels = SService.bitmap.Pixels;
+
+        if (SService.isRed)
+        {
+            var pixelsListR = pixels.Select(x => x.Red);
+
+            histogramListR = GetHistogramItemList(pixelsListR);
+
+            maxR = histogramListR.Max(x => x.Count);
+
+        }
+        if (SService.isGreen)
+        {
+            var pixelsListG = pixels.Select(x => x.Green);
+            histogramListG = GetHistogramItemList(pixelsListG);
+            maxG = histogramListG.Max(x => x.Count);
+        }
+        if (SService.isBlue)
+        {
+            var pixelsListB = pixels.Select(x => x.Blue);
+            histogramListB = GetHistogramItemList(pixelsListB);
+            maxB = histogramListB.Max(x => x.Count);
+        }
+        pixelsLength = pixels.Length;
+        double steps = 4;
+        stepR = (int)Math.Round(maxR / steps);
+        stepR = stepR > 0 ? stepR : 1;
+        maxR = 4 * stepR + 1;
+
+        stepG = (int)Math.Round(maxG / steps);
+        stepG = stepG > 0 ? stepG : 1;
+        maxG = 4 * stepG + 1;
+
+        stepB = (int)Math.Round(maxB / steps);
+        stepB = stepB > 0 ? stepB : 1;
+        maxB = 4 * stepB + 1;
+
+        dataIsSet = true;
+    }
+
+    private HistogramItem[] GetHistogram(byte[] pixels)
+    {
+        HistogramItem[] resultH = new HistogramItem[256];
+
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+        int[] array = new int[256];
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            array[pixels[i]]++;
+        }
+        stopwatch.Stop();
+        //Console.WriteLine("array: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        stopwatch.Reset();
+        stopwatch.Start();
+        for (int i = 0; i < resultH.Length; i++)
+        {
+            resultH[i] = new HistogramItem
+                    {
+                        Value = (byte)i,
+                        Count = array[i]
+                    };
+        }
+        stopwatch.Stop();
+        //Console.WriteLine("resultH: {0} ms", stopwatch.ElapsedMilliseconds);
+
+        return resultH;
+    }
+
+    private List<HistogramItem> GetHistogramItemList(IEnumerable<byte> pixels)
+    {
+        List<HistogramItem> resultH = new List<HistogramItem>();
+        int[] array = ImageProc.GetHistogramArray(pixels);
+
+        for (int i = 0; i < array.Length; i++)
+        {
+            resultH.Add( new HistogramItem
+            {
+                Value = (byte)i,
+                Count = array[i]
+            });
+        }
+
+        return resultH;
+    }
+
+    public async Task ToggleColor(SKColorChannel channel)
+    {
+        switch(channel)
+        {
+            case SKColorChannel.R:
+                SService.isRed = ! SService.isRed;
+                break;
+            case SKColorChannel.G:
+                SService.isGreen = ! SService.isGreen;
+                break;
+            case SKColorChannel.B:
+                SService.isBlue = ! SService.isBlue;
+                break;
+        }
+        await RedrawHistogram();
+    }
+
+    public async Task OnChannelChosen(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            if(Enum.TryParse((string)e.Value, out SKColorChannel enumVal))
+            {
+                channel = enumVal;
+                await RedrawHistogram();
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SService.isRed = false;
+        SService.isGreen = false;
+        SService.isBlue = false;
+        SService.SubscribeToRedrawHistogram(RedrawHistogram);
+    }
+}
+

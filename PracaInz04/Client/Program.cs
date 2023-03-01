@@ -4,7 +4,11 @@ using PracaInz04.Client;
 using PracaInz04.Client.Services;
 using Blazored.LocalStorage;
 using DnetIndexedDb;
-using static PracaInz04.Client.IndexedDBModels.IndexedDBModels;
+using static PracaInz04.Client.IndexedDbClasses.IndexedDBModels;
+using PracaInz04.Client.IndexedDbClasses;
+using PracaInz04.Client.ImageProcessingClasses;
+using PracaInz04.Client.LocalStorageClasses;
+using Blazored.Modal;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -14,15 +18,19 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Services.AddScoped<StateService>();
 builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddIndexedDbDatabase<GridColumnDataIndexedDb2>(options =>
+builder.Services.AddIndexedDbDatabase<IndexedDbContext>(options =>
 {
-    var indexedDbDatabaseModel = GetGridColumnDatabaseModelAttributeBased();
+    var indexedDbDatabaseModel = GetIndexedDbDatabaseModelAttributeBased();
     options.UseDatabase(indexedDbDatabaseModel);
 });
+builder.Services.AddScoped<IndexedDbManager>();
+builder.Services.AddScoped<ImageProcessing>();
+builder.Services.AddScoped<LocalStorageManager>();
+builder.Services.AddBlazoredModal();
 
 var host = builder.Build();
-var xstateService = host.Services.GetRequiredService<StateService>();
-await xstateService.GetFromLocalStorage();
+var LSManager = host.Services.GetRequiredService<LocalStorageManager>();
+await LSManager.GetFromLocalStorage();
 
 //await builder.Build().RunAsync();
 await host.RunAsync();

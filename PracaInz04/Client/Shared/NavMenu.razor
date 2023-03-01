@@ -1,6 +1,6 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">PracaInz04</a>
+        <a class="navbar-brand" href="">Image Editor</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -10,28 +10,13 @@
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <nav class="flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
+            <NavLink class="nav-link" href="gallery">
+                <span class="oi oi-grid-three-up" aria-hidden="true"></span> Gallery
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-             <NavLink class="nav-link" href="editor">
+            <NavLink class="nav-link" href="editor">
                 <span class="oi oi-pencil" aria-hidden="true"></span> Editor
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="saveas">
-                <span class="oi oi-data-transfer-download" aria-hidden="true"></span> Save as
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="idbtest">
-                <span class="oi oi-hard-drive" aria-hidden="true"></span> IndexedDB Test
             </NavLink>
         </div>
     </nav>

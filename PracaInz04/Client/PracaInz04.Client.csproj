@@ -1,32 +1,42 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="BaseComponents\**" />
     <Compile Remove="DnetIndexedDb\bin\**" />
     <Compile Remove="DnetIndexedDb\obj\**" />
     <Compile Remove="DnetIndexedDb\Properties\**" />
+    <Content Remove="BaseComponents\**" />
     <Content Remove="DnetIndexedDb\bin\**" />
     <Content Remove="DnetIndexedDb\obj\**" />
     <Content Remove="DnetIndexedDb\Properties\**" />
+    <EmbeddedResource Remove="BaseComponents\**" />
     <EmbeddedResource Remove="DnetIndexedDb\bin\**" />
     <EmbeddedResource Remove="DnetIndexedDb\obj\**" />
     <EmbeddedResource Remove="DnetIndexedDb\Properties\**" />
+    <None Remove="BaseComponents\**" />
     <None Remove="DnetIndexedDb\bin\**" />
     <None Remove="DnetIndexedDb\obj\**" />
     <None Remove="DnetIndexedDb\Properties\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blazor.Extensions.Canvas" Version="1.1.1" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.1.5" />
+    <PackageReference Include="Blazored.Modal" Version="6.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.1" PrivateAssets="all" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
+    <PackageReference Include="Radzen.Blazor" Version="3.18.15" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.0.0" />
+    <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,8 +48,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="BaseComponents\" />
     <Folder Include="DnetIndexedDb\wwwroot\" />
+    <Folder Include="wwwroot\images\" />
   </ItemGroup>
 
   <ItemGroup>

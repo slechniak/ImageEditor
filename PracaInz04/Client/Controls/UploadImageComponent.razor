@@ -1,0 +1,35 @@
+﻿@inject IndexedDbManager IDbManager
+@inject NavigationManager NavigationManager
+@inject LocalStorageManager LSManager
+@inject StateService SService
+
+<label for="formFile" class="form-label fw-bold lead text-secondary">Upload an image</label>
+<InputFile OnChange="OnFileUpload" class="form-control" id="formFile"/>
+
+@code {
+
+    [Parameter]
+    public EventCallback ParentMethod { get; set; }
+    public async Task OnFileUpload(InputFileChangeEventArgs e)
+    {
+        IBrowserFile imageFile = e.File;
+        byte[] imageArray = new byte[imageFile.Size];
+        await imageFile.OpenReadStream(1024*1024*10).ReadAsync(imageArray);
+        string imageType = imageFile.ContentType;
+
+        int imageId = await IDbManager.AddImageToIDb(imageArray, imageFile.Name);
+
+        await GoToEditor(imageFile.Name, imageId);
+
+        await ParentMethod.InvokeAsync();
+
+        SService.NotifyStateChanged();
+    }
+
+    public async Task GoToEditor(string imageName, int imageId)
+    {
+        await LSManager.SaveImageName(imageName);
+        await LSManager.SaveImageId(imageId);
+        NavigationManager.NavigateTo($"editor");
+    }
+}

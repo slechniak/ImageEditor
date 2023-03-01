@@ -1,0 +1,17 @@
+﻿@inject StateService SService
+@inject LocalStorageManager LSManager
+@inject IndexedDbManager IDbManager
+@inject IndexedDbContext IndexedDbContext
+@inject NavigationManager NavigationManager
+@inject ImageProcessing ImageProc
+
+<div class="d-flex justify-content-center mb-4">
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+@code {
+	[CascadingParameter] 
+	BlazoredModalInstance ModalInstance { get; set; }
+	
+}

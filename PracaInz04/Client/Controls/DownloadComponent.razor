@@ -1,0 +1,135 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.IO
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Formats
+@using SixLabors.ImageSharp.Formats.Bmp
+@using SixLabors.ImageSharp.Formats.Gif
+@using SixLabors.ImageSharp.Formats.Png
+@using SixLabors.ImageSharp.Formats.Tiff
+@inject IJSRuntime JS
+@inject StateService SService
+@inject IndexedDbManager IDbManager
+
+<EditForm Model="@filename" OnValidSubmit="@DownloadImage">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="input-group mb-4">
+      <span class="input-group-text">File name:</span>
+      <input @bind="filename.Name" type="text" class="form-control w-25" aria-label="Text input with dropdown button">
+      <select @bind="filename.Format" class="form-select" aria-label="Default select example">
+          @foreach(var format in formats)
+            {
+                <option value=@format>@format</option>
+            }
+      </select>
+    </div>
+    <button type="submit" class="btn btn-dark">Download</button>
+    <button @onclick="ModalInstance.CancelAsync" class="btn btn-secondary">Cancel</button>
+</EditForm>
+
+@code {
+    public class FileName
+    {
+        [Required]
+        [StringLength(20, ErrorMessage = "Name must be less than 20 characters")]
+        public string Name { get; set; } = "untitled";
+        public string Format { get; set; } = formats[0];
+
+        public string GetFileName()
+        {
+            return $"{Name}.{Format}";
+        }
+    }
+
+    [CascadingParameter] 
+    BlazoredModalInstance ModalInstance { get; set; }
+    [CascadingParameter] 
+    IModalService Modal { get; set; }
+    private FileName filename = new();
+    public static List<string> formats = new() { "png", "jpeg", "webp", "bmp", "gif", "tiff"};
+    [Parameter] 
+    public int? ImageId { get; set; }
+    [Parameter] 
+    public SKBitmap passedBitmap { get; set; }
+
+    private async Task DownloadImage()
+    {
+        //Console.WriteLine($"DownloadImage: {filename.Name}.{filename.Format}");
+        await ModalInstance.CancelAsync();
+        await SService.Progress(Modal, DownloadFileFromStream, message: "Converting...");
+    }
+
+    private async Task DownloadFileFromStream()
+    {
+        var fileStream = await GetFileStream();
+        var fileName = filename.GetFileName();
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private async Task<Stream> GetFileStream()
+    {
+        byte[] bitmapArray = {};
+        SKBitmap bitmap = passedBitmap;
+        if (ImageId != null)
+            bitmap = SKBitmap.Decode((await IDbManager.FetchImageOriginal2((int)ImageId)).Array);
+        bitmapArray = SKBitmapToArrayAnyFormat(bitmap);
+        var fileStream = new MemoryStream(bitmapArray);
+
+        return fileStream;
+    }
+
+    private byte[] SKBitmapToArrayAnyFormat(SKBitmap bitmap)
+    {
+        var resultArray = new byte[]{ };
+
+        switch(filename.Format)
+        {
+            case "png":
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Png, bitmap);
+                break;
+            case "jpeg":
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Jpeg, bitmap);
+                break;
+            case "webp":
+                resultArray = EncodeSkiaSharp(SKEncodedImageFormat.Webp, bitmap);
+                break;
+            case "bmp":
+                resultArray = EncodeImageSharp(new BmpEncoder() {}, bitmap);
+                break;
+            case "gif":
+                resultArray = EncodeImageSharp(new GifEncoder() {}, bitmap);
+                break;
+            case "tiff":
+                resultArray = EncodeImageSharp(new TiffEncoder() {}, bitmap);
+                break;
+        }
+
+        return resultArray;
+    }
+
+    private byte[] EncodeSkiaSharp(SKEncodedImageFormat skImageFormat, SKBitmap bitmap)
+    {
+        var skData = bitmap.Encode(skImageFormat, 100);
+        var bitmapArray = skData.ToArray();
+        return bitmapArray;
+    }
+
+    private byte[] EncodeImageSharp(IImageEncoder encoder, SKBitmap bitmap)
+    {
+        var bitmapArray = EncodeSkiaSharp(SKEncodedImageFormat.Png, bitmap);
+        var resultArray = new byte[]{ };
+        using (Image image = Image.Load(bitmapArray))
+        {
+            using (var ms = new MemoryStream())
+            {
+                image.Save(ms, encoder);
+                resultArray = ms.ToArray();
+            }
+        }
+        return resultArray;
+    }
+}

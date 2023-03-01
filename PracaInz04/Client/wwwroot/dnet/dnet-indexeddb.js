@@ -224,7 +224,7 @@ window.dnetindexeddbinterop = (function () {
 
                 observer.next(indexedDbMessages.DB_DELETED);
                 //my comment
-                console.log("onSuccess: DB_DELETED");
+                //console.log("onSuccess: DB_DELETED");
 
                 observer.complete();
             };
@@ -236,9 +236,8 @@ window.dnetindexeddbinterop = (function () {
             const onBlocked = (err) => {
                 //original line
                 //observer.error(indexedDbMessages.DB_DELETED_BLOCKED);
-                //err.target.result.close();
                 //my edit - works
-                console.log("onBlocked: DB_DELETED_BLOCKED");
+                //console.log("onBlocked: DB_DELETED_BLOCKED");
                 dbModel.instance.close();
             };
 

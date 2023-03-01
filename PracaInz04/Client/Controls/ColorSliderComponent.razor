@@ -1,0 +1,153 @@
+﻿@using static PracaInz04.Client.ImageProcessingClasses.ImageProcessing
+@inject StateService SService
+@inject ImageProcessing ImageProc
+
+<p class="fs-6 fw-bold m-2">Color sliders</p>
+
+<div class="container my-2">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isRed" id="flexCheckChecked3"
+            @onchange="() => ToggleColor(SKColorChannel.R)">
+        <label class="form-check-label" for="flexCheckChecked3">Red</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isGreen" id="flexCheckChecked2"
+            @onchange="() => ToggleColor(SKColorChannel.G)">
+        <label class="form-check-label" for="flexCheckChecked2">Green</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" value="@isBlue" id="flexCheckChecked1"
+            @onchange="() => ToggleColor(SKColorChannel.B)">
+        <label class="form-check-label" for="flexCheckChecked1">Blue</label>
+    </div>
+</div>
+
+<div class="d-flex align-items-center justify-content-center mb-2">
+    <input 
+        value="@multiShift" @oninput="(e) => OnMultiShiftChange(e)"
+        min="@minShift" max="@maxShift"
+        type="range" class="form-range m-2 w-50" id="customRange4">
+    <input 
+        value="@multiShift" @onchange="(e) => OnMultiNumberChange(e)"
+        type="number" class="form-control m-2 w-25" id="formControlInput4">
+</div>
+
+<div class="d-flex align-items-center justify-content-center my-2">
+    <button @onclick="ResetShifts" class="btn btn-dark mx-1">Reset values</button>
+    <button @onclick="ApplyFilter" class="btn btn-dark mx-1">Save changes</button>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<SKBitmap> AddBitmap { get; set; }
+    [Parameter]
+    public EventCallback<SKBitmap> ShowBitmap { get; set; }
+
+    public int colorShift = 0;
+    public int minShift = -255;
+    public int maxShift = 255;
+    public int redShift = 0;
+    public int greenShift = 0;
+    public int blueShift = 0;
+    public int multiShift = 0;
+    public bool isRed = false;
+    public bool isGreen = false;
+    public bool isBlue = false;
+    SKColorChannel colorChannel;
+    SKBitmap result;
+
+    public async Task ResetShifts()
+    {
+        redShift = 0;
+        greenShift = 0;
+        blueShift = 0;
+        multiShift = 0;
+
+        result = SService.bitmap.Copy();
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    public void ToggleColor(SKColorChannel channel)
+    {
+        switch(channel)
+        {
+            case SKColorChannel.R:
+                isRed = ! isRed;
+                break;
+            case SKColorChannel.G:
+                isGreen = ! isGreen;
+                break;
+            case SKColorChannel.B:
+                isBlue = ! isBlue;
+                break;
+        }
+    }
+
+    public async Task ApplyFilter()
+    {
+        if(isRed || isGreen || isBlue)
+            await FilterAndShowMulti();
+        else
+            await FilterAndShow();
+        await AddBitmap.InvokeAsync(result);
+    }
+
+    public async Task FilterAndShow()
+    {
+        result = SService.bitmap.Copy();
+        result = ImageProc.ChangeColor(result, colorShift, colorChannel);
+
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    public async Task FilterAndShowMulti()
+    {
+        result = SService.bitmap.Copy();
+        result = ImageProc.ChangeColorMulti(result, colorShift, isRed, isGreen, isBlue);
+        await ShowBitmap.InvokeAsync(result);
+    }
+
+    protected override void OnInitialized()
+    {
+        result = SService.bitmap?.Copy();
+    }
+
+    public async Task OnNumberChange(ChangeEventArgs e, SKColorChannel channel)
+    {
+        await OnShiftChange(e, channel); 
+    }
+
+    public async Task OnMultiNumberChange(ChangeEventArgs e)
+    {
+        await OnMultiShiftChange(e); 
+    }
+
+    private async Task OnShiftChange(ChangeEventArgs e, SKColorChannel channel)
+    {
+        colorShift = Convert.ToInt32(e.Value);
+        switch(channel)
+        {
+            case SKColorChannel.R:
+                redShift = colorShift;
+                break;
+            case SKColorChannel.G:
+                greenShift = colorShift;
+                break;
+            case SKColorChannel.B:
+                blueShift = colorShift;
+                break;
+        }
+        colorShift = Math.Clamp(colorShift, minShift, maxShift);
+        colorChannel = channel;
+        await FilterAndShow();
+    }
+
+    private async Task OnMultiShiftChange(ChangeEventArgs e)
+    {
+        colorShift = Convert.ToInt32(e.Value);
+        colorShift = Math.Clamp(colorShift, minShift, maxShift);
+        multiShift = colorShift;
+
+        await FilterAndShowMulti();
+    }
+}
